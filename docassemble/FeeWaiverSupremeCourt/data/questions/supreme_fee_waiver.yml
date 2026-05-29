@@ -1,0 +1,4023 @@
+metadata:
+  title: Fee waiver - Supreme Court
+  short title: Fee waiver - Supreme Court
+  authors:
+    - Vivian McNaughton
+    - Matt Newsted
+---
+include:
+  - docassemble.AssemblyLine:al_package.yml
+  - docassemble.ILAO:ilao-interview-framework.yml
+  - docassemble.ILAO:shared-basic-questions.yml
+---
+modules:
+  - docassemble.PovertyScale.poverty
+---
+mandatory: True
+code: |
+  ilao_easy_form_url = "https://www.illinoislegalaid.org/legal-information/fee-waiver-supreme-court-illinois"
+  ilao_easy_form_title = "Fee waiver - Supreme Court"
+  github_repo_name = "docassemble-FeeWaiverSupremeCourt"
+  github_user = 'IllinoisLegalAidOnline'
+  form_name = "Supreme court fee waiver"
+  al_form_type = 'existing_case'
+  allowed_courts = ['Circuit']
+---
+objects:
+  - users: ALPeopleList 
+  - other_parties: ALPeopleList
+  - judge: ALIndividual
+  - user_income_other_list: DAList.using(object_type=Thing, complete_attribute='complete', there_are_any=True)
+  - user_annual_other_list: DAList.using(object_type=Thing, complete_attribute='complete', there_are_any=True)
+  - user_expense_other_list: DAList.using(object_type=Thing, complete_attribute='complete', there_are_any=True)
+  - user_asset_other_list: DAList.using(object_type=Thing, complete_attribute='complete', there_are_any=True)
+  - court_list: ALCourtLoader.using(file_name='docassemble.ILAO:data/sources/il_courts.xlsx')
+  - user_benefits: DADict
+---
+sections:
+  - section_intro: Start
+  - section_income: Income
+  - section_expenses: Expenses
+  - section_assets: Assets
+  - section_case_info: Court case info
+  - section_about_you: About you
+  - section_download: Download
+---
+mandatory: True
+code: |
+  nav.set_section('section_intro')
+  sees_nav_bar
+  snapshot_start
+  set_progress(5)
+  how_to_use
+  accept_terms
+  whats_next
+  set_progress(10)
+  appellate_fee_waiver
+  filing_basis = "filing_self"
+
+  nav.set_section('section_income')
+  if not user_is_incarcerated:
+    user_has_dependents
+    if user_receives_benefits:
+      user_qualifies_interstitial
+  if user_is_incarcerated or not user_receives_benefits:
+    user_applied_for_benefits
+    set_progress(25)
+    if not user_income_none:
+      if user_income_other:
+        user_income_other_list.gather()
+    if not user_annual_none:
+      if user_annual_other:
+        user_annual_other_list.gather()
+    nav.set_section('section_expenses')
+    if not user_expense_none:
+      if user_expense_other:
+        user_expense_other_list.gather()
+    set_progress(35)
+    nav.set_section('section_assets')
+    ask_user_assets
+    if not user_asset_none:
+      if user_asset_other:
+        user_asset_other_list.gather()
+    if not poverty_scale_get_income_limit(household_size=household_size, multiplier=1.25) is None:
+      show_qualification_guess
+  user_income_total
+  user_annual_total
+  user_expense_total
+  user_asset_total
+  
+  set_progress(50)
+  nav.set_section('section_case_info')
+  user_ask_role
+  users.gather()
+  other_parties.gather()  
+  if in_re_check == True:
+    in_re_label
+  docket_number
+  plaintiffs
+  defendants
+  trial_court.address.address
+  judge.name.last
+  minor_involvement
+  juvenile_act_involvement
+
+  user_is_appellant
+  appellate_district
+  appellate_case_number
+  
+  set_progress(85)
+  nav.set_section('section_about_you')
+  substantial_hardship_explanation
+  users[0].address.address
+  users[0].has_email_address
+
+  set_progress(90)
+  e_signature
+  bring_docs
+
+  set_progress(100)
+  nav.set_section('section_download')
+  forms_assembling
+  snapshot_forms
+  get_docs_screen
+---
+code: |
+  stuff_to_snapshot = {
+  	'start_time': str(current_datetime().format_datetime()),
+  	'started_interview': True, 
+  	}
+    
+  try:
+    stuff_to_snapshot['ip_address'] = device(ip=True)
+  except:
+    pass
+
+  stuff_to_snapshot['zip'] = showifdef('users[0].address.zip')
+
+  stuff_to_snapshot['downloaded_forms'] = showifdef('forms_assembling')
+  
+  store_variables_snapshot(
+  	data=stuff_to_snapshot, persistent=True
+  	)
+  snapshot_interview_state = True
+---
+code: |
+  snapshot_interview_state
+  snapshot_start = True  
+---
+code: |
+  reconsider('snapshot_interview_state')
+  snapshot_forms = True
+---
+id: trial court county
+continue button field: case_county
+question: |
+  In which county was the circuit court case filed?
+subquestion: |
+  This is the county is where the trial court issued the order that is being appealed.
+fields:
+  - County: trial_court_index
+    code: |
+      court_county_lookup()
+---
+code: |
+  def court_county_lookup():
+    all_court_counties = court_list._load_courts()['address_county'].items()
+    filtered_courts = [(-1, "Cook")]
+    for court in all_court_counties:
+      if court[1] != "Cook":
+        filtered_courts.append(court)
+    return sorted( filtered_courts, key=lambda y: y[1])
+---
+depends on:
+  - trial_court_index
+code: |
+  if trial_court_index == "-1":
+    trial_court = court_list.as_court('trial_court', 15)
+  else:
+    trial_court = court_list.as_court('trial_court', trial_court_index)
+---
+id: welcome
+question: |
+  Fee waiver - Appellate Court
+subquestion: |
+  Welcome to Illinois Legal Aid Online's **Fee waiver - Appellate Court** Easy Form.
+  
+  This program makes a *Application for Waiver of Appellate Court Fees*, which asks the court to let you participate in an appeal for free or at a reduced cost.
+  
+  To learn more, read ILAO's article about [**court fees and fee waivers**](https://www.illinoislegalaid.org/node/189246).
+field: sees_nav_bar
+---
+id: your name
+sets:
+    - users[0].name.first
+    - users[0].name.last
+question:  |
+  What is your name?
+fields:
+  - code: |
+      users[0].name_fields()
+---
+id: instructions
+continue button field: how_to_use
+question: |
+  Instructions
+subquestion: |
+  To use this program you will need to know: 
+
+  * The public benefits that you get,
+  * Your income in the past month,
+  * Your income over the past 12 months,
+  * Your monthly expenses, and
+  * The value of your belongings.
+
+  You will also need to know information about the:
+  
+  * Circuit court case, including case number, county, and judge, and
+  * Appellate court case for which you are requesting a fee waiver, including appellate district and who filed the appeal.
+
+  You can find information about court cases on your court papers or documents you received from the court clerks.
+  
+  Set aside 10 to 15 minutes to finish this program. You can log in and save your work to continue later. 
+ 
+  ${ collapse_template(help_example) }  
+
+  Click on **{green words}** to learn what they mean. Some pages have a question mark in a circle ${ fa_icon("question-circle", color_css="#0dcaf0" ) } that helps explain things.
+---
+template: help_example
+subject: |
+  **You can click sections like this to show more information.**
+content: |  
+  This is an example of help. Click again to hide.
+---
+id: whats next
+continue button field: whats_next
+question: |
+  After you finish this program
+subquestion: |
+  After you download your *Application for Waiver of Appellate Court Fees* (${ form_name }), you must file it with the court. This program **does not file** your ${ form_name } for you.
+  
+  **Note:** You can file your ${ form_name } at any time during your appellate court case. It is usually done when a person files their first forms in appellate court. That way they might have all of the court fees in a case waived.
+  
+  To learn more, read the "How to Request an Appellate Court Fee Waiver" instructions you can download at the end of this program. 
+---
+template: get_legal_help
+subject: |
+  **What if I need legal advice?**
+content: |  
+  If you have questions or concerns about your legal problem and want legal advice you should talk to a lawyer.
+  
+  Use [**Get Legal Help**](https://www.illinoislegalaid.org/get-legal-help) to find free or low-cost legal services in your area.
+---
+id: appellate court only
+continue button field: appellate_fee_waiver
+question: |
+  Fee waiver for appellate court 
+subquestion: |
+  You can use this program to make fee waiver forms if you have a case in the Illinois Appellate Court.
+  
+  There are **different fee waiver forms** to use if:
+
+  * Your case is in the circuit court. This is also called the trial court, and it is where most cases start. Examples of circuit court cases are divorce, family law, evictions, small claims, foreclosures, and lawsuits for injury or property damage. Asking a judge to expunge or seal a criminal case is also started in circuit court. If you need to ask for a fee waiver in a circuit court case, use the [**Fee waiver Easy Form**](https://www.illinoislegalaid.org/node/30831).
+  
+  * Your case is in the Illinois Supreme Court. If you need to ask for a fee waiver in a Supreme Court case, use the [**Fee waiver - Supreme Court of Illinois Easy Form**](https://www.illinoislegalaid.org/node/158696).
+  
+  If you were ordered to pay court costs (called "assessments") in a criminal or traffic case and cannot afford them, use the [**Criminal Court fee waiver Easy Form**](https://www.illinoislegalaid.org/node/154466).
+---
+id: is user incarcerated
+question: |
+  Are you currently incarcerated?
+subquestion: |
+  If you are currently incarcerated, the ${ form_name } asks for different information.
+fields:
+  - no label: user_is_incarcerated
+    datatype: yesnoradio
+  - What is your Inmate ID?: inmate_id
+    maxlength: 30
+    show if:
+      variable: user_is_incarcerated
+      is: True
+  - What is the current balance of your trust account?: trust_account_balance
+    datatype: currency
+    min: 0
+    show if:
+      variable: user_is_incarcerated
+      is: True
+      
+
+---
+id: Do you receive any benefits
+question: |
+  % if filing_basis == "filing_self":
+  Do you **currently** receive any public benefits?
+  % else:
+  Does ${ users[0].familiar() } receive any public benefits?
+  % endif
+subquestion: |
+  % if filing_basis == "filing_self":
+  Check any benefits that you currently receive.
+  % else:
+  Check any benefits that ${ users[0].familiar() } currently receives.
+  % endif
+
+  **Note:** Medicaid works differently than these benefits. If ${you_or_they} are on Medicaid and want to include this in ${your_or_their} ${ form_name } application, you can explain it on another screen.  
+fields:
+  - no label: user_benefits
+    datatype: checkboxes
+    choices:
+      - SSI - Supplemental Security Income (not Social Security): SSI
+      - AABD - Aid to the Aged, Blind and Disabled: AABD
+      - TANF - Temporary Assistance to Needy Families: TANF
+      - SNAP - Supplemental Nutrition Assitance Program (Food Stamps): SNAP
+      - General Assistance Program (GA), Transitional Assistance, or State Children and Family Assistance: GA
+    required: False
+---
+id: Did you apply for any benefits
+question: |
+  % if filing_basis == "filing_self":
+  Have you applied for and are waiting to learn if you receive any public benefits?
+  % else:
+  Has ${ users[0].familiar() } applied for and is waiting to learn if
+  they receive any public benefits?
+  % endif 
+subquestion: |
+  % if filing_basis == "filing_self":
+  Answer **Yes** if you **applied** for any of these benefits but do not yet
+  know if you will receive them because your application is pending.
+  % else:
+  Answer **Yes** if **${ users[0].familiar() }** has **applied** for any of these benefits but does not yet
+  know if they will receive them because their application is pending.
+  % endif
+  
+  * SSI - Supplemental Security Income (not Social Security)
+  * AABD - Aid to the Aged, Blind and Disabled
+  * TANF - Temporary Assistance to Needy Families
+  * SNAP - Supplemental Nutrition Assitance Program (Food Stamps)
+  * General Assistance Program (GA), Transitional Assistance, or State Children and Family Assistance
+
+  **Note:** Medicaid works differently than these benefits. If ${you_or_they} are on Medicaid and want to include this in ${your_or_their} ${ form_name } application, you can explain it on another screen.  
+fields:
+  - no label: user_applied_for_benefits
+    datatype: yesnoradio
+---
+reconsider: True
+code: |
+  if user_is_incarcerated:
+    user_receives_benefits = False
+  else:  
+    user_receives_benefits = user_benefits.any_true()
+---
+code: |
+  user_has_applied_for_benefits = user_applied_for_benefits
+---
+id: is the user the plaintiff or defendant?
+question: |
+  % if filing_basis == "filing_self":
+  Did you start the circuit court case, or did you respond to a case that someone else filed against you?
+  % else:
+  Did ${ users[0].familiar() } start the circuit court case, or did they respond to a case
+  that someone else filed?
+  % endif
+subquestion: |
+  ${ collapse_template(user_role_help) }
+fields: 
+  - no label: user_ask_role
+    datatype: radio
+    choices:
+      - "I started the circuit court case.": plaintiff
+      - "I am responding to a circuit court case filed against me.": defendant
+    show if:
+      code: |
+        filing_basis == "filing_self"
+  - no label: user_ask_role
+    datatype: radio
+    choices:
+      - ${ users[0].familiar() } started the case: plaintiff
+      - ${ users[0].familiar() } responded to a case filed against them: defendant
+    show if:
+      code: |
+        filing_basis != "filing_self"
+  - note: |
+      % if filing_basis == "filing_self":
+      Okay, you are the **Plaintiff** or **Petitioner** in the circuit court case. The other 
+      side is the Defendant or Respondent.
+      % else:
+      Okay, ${ users[0].familiar() } is the **Plaintiff** or **Petitioner** in
+      the circuit court case. The other side is the Defendant or Respondent. 
+      % endif
+    show if:
+      variable: user_ask_role
+      is: "plaintiff"
+  - note: |
+      % if filing_basis == "filing_self":
+      Okay, you are the **Defendant** or **Respondent** in the circuit court case. The other 
+      side is the Plaintiff or Petitioner.
+      % else:
+      Okay, ${ users[0].familiar() } is the **Defendant** or **Respondent** in
+      the circuit court case. The other side is the Plaintiff or Petitioner.
+      % endif
+    show if:
+      variable: user_ask_role
+      is: "defendant"
+---
+template: user_role_help
+subject: |
+  **How to determine your role in the circuit court case**
+content: |  
+  % if filing_basis == "filing_self":
+  If you were the first person to file a form in the circuit court case, you started the case. You are the **Plaintiff** or the **Petitioner.**
+
+  If you were responding to a circuit court case or court papers someone else filed, you are the **Defendant** or the **Respondent.**
+  % else:
+  If ${ users[0].familiar() } was the first person to file a form in the circuit court case, they started the case. ${ users[0].familiar() } is the **Plaintiff** or the **Petitioner.**
+
+  If ${ users[0].familiar() } was responding to a circuit court case or court papers someone else filed, ${ users[0].familiar() } is the **Defendant** or the **Respondent.**
+  % endif
+---
+id: user qualifies benefits
+continue button field: user_qualifies_interstitial
+question: |
+  % if filing_basis == "filing_self":
+  We think you should qualify
+  % else:
+  We think ${ users[0].familiar() } should qualify
+  % endif
+subquestion: |
+  % if filing_basis == "filing_self": 
+  Because you currently receive public benefits, you should qualify for 100% waiver of fees for your appeal.
+  % else:
+  Because ${ users[0].familiar() } currently receives public benefits, they should qualify for a 100% waiver of fees in this appeal.
+  % endif
+---
+id: How many dependents do you have
+question: |
+  % if filing_basis == "filing_self":
+  Does anyone live with you that you support financially?  
+  % else:
+  Does anyone live with ${ users[0].familiar() } that they support
+  financially?
+  % endif
+subquestion: |
+  % if filing_basis == "filing_self":
+  Click **Yes** if other household members rely on you for money or to pay their bills.
+  
+  Do not include yourself.
+  % else:
+  Click **Yes** if ${ users[0].familiar() }'s household members rely on ${ users[0].familiar() } for money or to pay their bills.
+  
+  Do not include ${ users[0].familiar() }.
+  % endif  
+fields:
+  - Support other household members?: user_has_dependents
+    datatype: yesnoradio
+  - Number of other adults supported: user_dependents_adults
+    datatype: integer
+    min: 0
+    show if: user_has_dependents
+  - Number of children under 18 supported: user_dependents_children
+    datatype: integer
+    min: 0
+    show if: user_has_dependents
+---
+id: What income did you receive in the last month
+question: |
+  % if filing_basis == "filing_self":
+  What income did you receive in the last month?
+  % else:
+  What income did ${ users[0].familiar() } receive in the last month?
+  % endif
+subquestion: |
+  If entering an amount, list the income received **before taxes**.
+
+  <span style="color: red;">*</span>You must select at least one option.
+fields:
+  - label: |
+      % if filing_basis == "filing_self":
+      I do not have any income.
+      % else:
+      ${ users[0].familiar() } does not have any income.
+      % endif
+    field: user_income_none
+    datatype: yesnowide
+    disable others: True
+  - Money from jobs or self-employment: user_income_employment
+    datatype: yesnowide
+  - "Amount": user_income_employment_amount
+    datatype: currency
+    min: 0
+    show if: user_income_employment
+  - "Social Security (not SSI)": user_income_ss
+    datatype: yesnowide
+  - "Amount": user_income_ss_amount
+    datatype: currency
+    min: 0
+    show if: user_income_ss
+  - "Child support": user_income_child_support
+    datatype: yesnowide
+  - "Amount": user_income_child_support_amount
+    datatype: currency
+    min: 0
+    show if: user_income_child_support
+  - "Unemployment benefits": user_income_unemployment
+    datatype: yesnowide    
+  - "Amount": user_income_unemployment_amount
+    datatype: currency
+    min: 0
+    show if: user_income_unemployment
+  - "Pension": user_income_pension
+    datatype: yesnowide
+  - "Amount": user_income_pension_amount
+    datatype: currency
+    min: 0
+    show if: user_income_pension
+  - "Money from household members": user_income_household
+    datatype: yesnowide
+  - "Amount": user_income_household_amount
+    datatype: currency
+    min: 0
+    show if: user_income_household    
+  - "Other income not listed above (enter details on the next screen)": user_income_other
+    datatype: yesnowide
+    help: |
+      Examples of other income include:
+      
+        * Money from family or friends,
+        * Spousal support, also called alimony,
+        * Business or rental income,
+        * Veterans benefits, or 
+        * Military allowance.      
+validation code: |
+  if not (user_income_none or user_income_employment or user_income_unemployment or user_income_household or user_income_ss or user_income_child_support or user_income_pension or user_income_other):
+    validation_error("Check at least one option.", field="user_income_other")
+---
+id: user other income details
+question: |
+  % if filing_basis == "filing_self":
+  What other income did you receive in the last month?
+  % else:
+  What other income did ${ users[0].familiar() } receive in the last month?
+  % endif
+subquestion: |
+  List the amount of income you received before taxes.
+
+  % if i == 1:
+  **Note:** If you have more than one, you can list them together and add up the amount.
+  % endif
+fields:
+  - "Type or source of income": user_income_other_list[i].name.text
+    maxlength: 25
+  - "Amount": user_income_other_list[i].amount
+    datatype: currency
+    min: 0.01
+
+---
+id: any other monthly income
+question: |
+  Any other income in the past month?
+subquestion: |
+  The form has space for **{certain types of income}** and up to two other sources of income. **Note:** If you have more than one more, you can list them together and add up the amount.
+
+  So far you have told us about:
+  
+  % if user_income_employment:
+   * $${thousands(user_income_employment_amount, show_decimals=True)} from jobs or self-employment
+  % endif
+  % if user_income_ss:
+   * $${thousands(user_income_ss_amount, show_decimals=True)} from Social Security (not SSI)
+  % endif
+  % if user_income_child_support:
+   * $${thousands(user_income_child_support_amount, show_decimals=True)} from child support
+  % endif
+  % if user_income_unemployment:
+   * $${thousands(user_income_unemployment_amount, show_decimals=True)} from Unemployment
+  % endif
+  % if user_income_pension:
+   * $${thousands(user_income_pension_amount, show_decimals=True)} from pension
+  % endif
+  % if user_income_household:
+   * $${thousands(user_income_household_amount, show_decimals=True)} from other household members
+  % endif
+  % for other_income in user_income_other_list:
+   * $${thousands(other_income.amount, show_decimals=True)} from ${other_income.name.text} 
+  % endfor
+fields:
+  - "Add another source of income?": user_income_other_list.there_is_another
+    datatype: yesnoradio
+---
+terms: 
+  - "certain types of income": |
+      These income types are listed on the ${ form_name } application:
+      
+       * Employment
+       * Social Security (not SSI)
+       * Child support
+       * Unemployment
+       * Pension
+       * Money from other household members
+---
+code: |
+  user_income_other_list[i].name.text
+  user_income_other_list[i].amount
+  user_income_other_list[i].complete = True
+---
+code: |
+  if user_income_other_list.number_gathered() >= 2:
+    user_income_other_list.there_is_another = False
+---
+# replaced by other function march 2026
+#depends on:
+#  - user_income_other_list[0].amount
+#  - user_income_other_list[1].amount
+#  - user_income_household_amount
+#  - user_income_ss_amount
+#  - user_income_employment_amount
+#  - user_income_child_support_amount
+#  - user_income_unemployment_amount'
+#  - user_income_pension_amount 
+#code: |
+#  def sum_if_defined(*pargs):
+#    total = 0
+#    for source in pargs:
+#      if defined(source):
+#        total += value(source)
+#    return total        
+#  
+#  user_income_total = sum_if_defined('user_income_other_list[0].amount', 
+#      'user_income_other_list[1].amount',
+#      'user_income_household_amount',
+#      'user_income_ss_amount',
+#      'user_income_employment_amount',
+#      'user_income_child_support_amount',
+#      'user_income_unemployment_amount',
+#      'user_income_pension_amount')
+---
+reconsider: True
+code: |
+  user_income_total = get_income_total()
+---
+code: |
+  def get_income_total():
+    income_sum = 0
+
+    if not user_is_incarcerated:
+      if user_receives_benefits:
+        return income_sum
+  
+    if not user_income_none:
+      if user_income_pension:
+        income_sum += user_income_pension_amount
+      if user_income_unemployment:
+        income_sum += user_income_unemployment_amount
+      if user_income_child_support:
+        income_sum += user_income_child_support_amount
+      if user_income_employment:
+        income_sum += user_income_employment_amount
+      if user_income_ss:
+        income_sum += user_income_ss_amount
+      if user_income_household:
+        income_sum += user_income_household_amount
+      if user_income_other:
+        income_sum += user_income_other_list[0].amount
+        if user_income_other_list.number() > 1:
+          income_sum += user_income_other_list[1].amount
+
+    return income_sum
+---
+id: What income did you receive in the last year
+question: |
+  % if filing_basis == "filing_self":
+  What income did you get in the last 12 months?
+  % else:
+  What income did ${ users[0].familiar() } get in the last 12 months?
+  % endif
+subquestion: |
+  We will use the information that you gave us about income from
+  last month as a starting point. Look it over carefully and make
+  any corrections that you need.
+  
+  Enter the actual amount received **over the last 12 months** for each kind
+  of income. List the amount of income you received **before taxes**.
+  
+  <span style="color: red;">*</span>You must select at least one option.
+fields:
+  - label: |
+      % if filing_basis == "filing_self":
+      I did not have any income in the last 12 months.
+      % else:
+      ${ users[0].familiar() } did not have any income over the last 12 months.
+      % endif
+    field: user_annual_none
+    datatype: yesnowide
+    disable others: True
+  - Money from jobs or self-employment: user_annual_employment
+    datatype: yesnowide
+    default: ${ showifdef('user_income_employment') }
+  - "Amount": user_annual_employment_amount
+    datatype: currency
+    min: 0
+    default: |
+      % if defined('user_income_employment_amount'):
+      ${ user_income_employment_amount * 12 }
+      % endif
+    show if: user_annual_employment
+  - "Social Security": user_annual_ss
+    datatype: yesnowide
+    default: ${ showifdef('user_income_ss') }
+  - "Amount": user_annual_ss_amount
+    datatype: currency
+    min: 0
+    default: |
+      % if defined('user_income_ss_amount'):
+      ${ user_income_ss_amount * 12 }
+      % endif
+    show if: user_annual_ss      
+  - "Child support": user_annual_child_support
+    datatype: yesnowide
+    default: ${ showifdef('user_income_child_support') }
+  - "Amount": user_annual_child_support_amount
+    datatype: currency
+    min: 0
+    show if: user_annual_child_support
+    default: |
+      % if defined('user_income_child_support_amount'):
+      ${ user_income_child_support_amount * 12 }
+      % endif
+  - "Unemployment benefits": user_annual_unemployment
+    datatype: yesnowide
+    default: ${ showifdef('user_income_unemployment') }
+  - "Amount": user_annual_unemployment_amount
+    datatype: currency
+    min: 0
+    default: |
+      % if defined('user_income_unemployment_amount'):
+      ${ user_income_unemployment_amount * 12 }
+      % endif
+    show if: user_annual_unemployment
+  - "Pension": user_annual_pension
+    datatype: yesnowide
+    default: ${ showifdef('user_income_pension') }
+  - "Amount": user_annual_pension_amount
+    datatype: currency
+    min: 0
+    default: |
+      % if defined('user_income_pension_amount'):
+      ${ user_income_pension_amount * 12 }
+      % endif
+    show if: user_annual_pension
+  - "Household members": user_annual_household
+    datatype: yesnowide
+    default: ${ showifdef('user_income_household') }
+  - "Amount": user_annual_household_amount
+    datatype: currency
+    min: 0
+    show if: user_annual_household
+    default: |
+      % if defined('user_income_household_amount'):
+      ${ user_income_household_amount * 12 }
+      % endif    
+  - "Other income not listed above (enter details on the next screen)": user_annual_other
+    datatype: yesnowide
+    default: ${ showifdef('user_income_other') }
+    help: |
+      Examples of other income include:
+      
+        * Money from family or friends,
+        * Spousal support, also called alimony,
+        * Business or rental income,
+        * Veterans benefits, or 
+        * Military allowance.      
+validation code: |
+  if not (user_annual_none or user_annual_employment or user_annual_unemployment or user_annual_household or user_annual_ss or user_annual_child_support or user_annual_pension or user_annual_other):
+    validation_error("Check at least one option.", field="user_annual_other")
+---
+id: user other income last year details
+question: |
+  % if filing_basis == "filing_self":
+  What other income did you receive in the last 12 months?
+  % else:
+  What other income did ${ users[0].familiar() } receive in the last 12 months?
+  % endif
+subquestion: |
+  List the amount of income you received before taxes.
+
+  % if i == 1:
+  **Note:** If you have more than one, you can list them together and add up the amount.
+  % endif
+fields:
+  - "Type or source of income": user_annual_other_list[i].name.text
+    maxlength: 25
+  - "Total amount from past 12 months": user_annual_other_list[i].amount
+    datatype: currency
+    min: 0.01
+
+---
+id: any other income last year
+question: |
+  Any other income in the past 12 months?
+subquestion: |
+  The form has space for **{certain types of income}** and up to two other sources of income. **Note:** If you have more than one more, you can list them together and add up the amount.
+
+  So far you have told us about:
+  
+  % if user_annual_employment:
+   * $${thousands(user_annual_employment_amount, show_decimals=True)} from jobs or self-employment
+  % endif
+  % if user_annual_ss:
+   * $${thousands(user_annual_ss_amount, show_decimals=True)} from Social Security (not SSI)
+  % endif
+  % if user_annual_child_support:
+   * $${thousands(user_annual_child_support_amount, show_decimals=True)} from child support
+  % endif
+  % if user_annual_unemployment:
+   * $${thousands(user_annual_unemployment_amount, show_decimals=True)} from Unemployment
+  % endif
+  % if user_annual_pension:
+   * $${thousands(user_annual_pension_amount, show_decimals=True)} from pension
+  % endif
+  % if user_annual_household:
+   * $${thousands(user_annual_household_amount, show_decimals=True)} from other household members
+  % endif
+  % for other_income in user_annual_other_list:
+   * $${thousands(other_income.amount, show_decimals=True)} from ${other_income.name.text} 
+  % endfor
+fields:
+  - "Add another source of income?": user_annual_other_list.there_is_another
+    datatype: yesnoradio
+---
+code: |
+  user_annual_other_list[i].name.text
+  user_annual_other_list[i].amount
+  user_annual_other_list[i].complete = True
+---
+code: |
+  if user_annual_other_list.number_gathered() >= 2:
+    user_annual_other_list.there_is_another = False
+---
+# replaced by function march 2026
+#depends on:
+#  - user_annual_other_list[0].amount
+#  - user_annual_other_list[1].amount
+#  - user_annual_household_amount
+#  - user_annual_ss_amount
+#  - user_annual_employment_amount
+#  - user_annual_child_support_amount
+#  - user_annual_unemployment_amount'
+#  - user_annual_pension_amount 
+#code: |
+#  user_annual_total = sum_if_defined(
+#      'user_annual_child_support_amount',
+#      'user_annual_employment_amount',
+#      'user_annual_household_amount',
+#      'user_annual_pension_amount',
+#      'user_annual_ss_amount',
+#      'user_annual_unemployment_amount',
+#      'user_annual_other_list[0].amount',
+#      'user_annual_other_list[1].amount'
+#  )
+---
+reconsider: True
+code: |
+  user_annual_total = get_annual_total()
+---
+code: |
+  def get_annual_total():
+    annual_sum = 0
+  
+    if not user_is_incarcerated:
+      if user_receives_benefits:
+        return annual_sum
+  
+    if not user_annual_none:
+      if user_annual_pension:
+        annual_sum += user_annual_pension_amount
+      if user_annual_unemployment:
+        annual_sum += user_annual_unemployment_amount
+      if user_annual_child_support:
+        annual_sum += user_annual_child_support_amount
+      if user_annual_employment:
+        annual_sum += user_annual_employment_amount
+      if user_annual_ss:
+        annual_sum += user_annual_ss_amount
+      if user_annual_household:
+        annual_sum += user_annual_household_amount
+      if user_annual_other:
+        annual_sum += user_annual_other_list[0].amount
+        if user_annual_other_list.number() > 1:
+          annual_sum += user_annual_other_list[1].amount
+
+    return annual_sum
+
+---
+id: What expenses do you have right now
+question: |
+  % if filing_basis == "filing_self":
+  What expenses do you have right now?
+  % else:
+  What expenses does ${ users[0].familiar() } have right now?
+  % endif
+subquestion: |
+  Enter the amount that each expense costs **per month**.
+  
+  % if filing_basis == "filing_self":
+  If you share expenses with someone, list only the amount you pay.
+  % else:
+  If ${ users[0].familiar() } shares expenses with someone, list only the amount that ${ users[0].familiar() } pays.
+  % endif
+
+  <span style="color: red;">*</span>You must select at least one option.
+fields:
+  - label: |
+      % if filing_basis == "filing_self":
+      I do not have any expenses
+      % else:
+      ${ users[0].familiar() } does not have any expenses
+      % endif
+    field: user_expense_none
+    datatype: yesnowide
+    disable others: True
+  - "Rent": user_expense_rent
+    datatype: yesnowide    
+  - "Amount": user_expense_rent_amount
+    datatype: currency
+    min: 0
+    show if: user_expense_rent
+  - "Home mortgage": user_expense_mortgage
+    datatype: yesnowide
+  - "Amount": user_expense_mortgage_amount
+    datatype: currency
+    min: 0
+    show if: user_expense_mortgage
+  - "Other mortgage": user_expense_other_mortgage
+    datatype: yesnowide
+  - "Amount": user_expense_other_mortgage_amount
+    datatype: currency
+    min: 0
+    show if: user_expense_other_mortgage
+  - "Utilities": user_expense_utilities
+    datatype: yesnowide
+  - "Amount": user_expense_utilities_amount
+    datatype: currency
+    min: 0
+    show if: user_expense_utilities
+  - "Food": user_expense_food
+    datatype: yesnowide
+  - "Amount": user_expense_food_amount
+    datatype: currency
+    min: 0
+    show if: user_expense_food
+  - "Medical expenses": user_expense_medical
+    datatype: yesnowide
+  - "Amount": user_expense_medical_amount
+    datatype: currency
+    min: 0
+    show if: user_expense_medical
+  - "Vehicle, including any loans": user_expense_car
+    datatype: yesnowide
+  - "Amount": user_expense_car_amount
+    datatype: currency
+    min: 0
+    show if: user_expense_car
+  - "Childcare": user_expense_childcare
+    datatype: yesnowide
+  - "Amount": user_expense_childcare_amount
+    datatype: currency
+    min: 0
+    show if: user_expense_childcare
+  - "Child support": user_expense_child_support
+    datatype: yesnowide
+  - "Amount": user_expense_child_support_amount
+    datatype: currency
+    min: 0
+    show if: user_expense_child_support
+  - "Other monthly expenses or loans not listed above": user_expense_other
+    datatype: yesnowide
+    help: |
+      Examples of other expenses include:
+      
+        * Transportation costs like gas, car repairs, or bus passes,
+        * Car insurance or other kinds of insurance,
+        * Home maintenance,
+        * Household supplies, or      
+        * School fees.
+        
+      Examples of debt or loan payments include:
+      
+        * Credit card debt,
+        * Student loans,
+        * Payday loans, or
+        * Loans from family or friends.
+validation code: |
+  if not (user_expense_none or user_expense_rent or user_expense_mortgage or user_expense_other_mortgage or user_expense_utilities or user_expense_food or user_expense_medical or user_expense_car or user_expense_childcare or user_expense_child_support or user_expense_other):
+    validation_error("Check at least one option.", field="user_expense_other")
+---
+id: user other expenses details
+question: |
+  % if filing_basis == "filing_self":
+  What other monthly expenses do you have right now?
+  % else:
+  What other monthly expenses does ${ users[0].familiar() } have right now?
+  % endif
+subquestion: |
+  Enter the expense and the amount that it costs **per month**.
+  
+  % if filing_basis == "filing_self":
+  If you share expenses with someone, list only the amount you pay.
+  % else:
+  If ${ users[0].familiar() } shares expenses with someone, list only the amount that ${ users[0].familiar() } pays.
+  % endif
+
+  % if i == 1:
+  **Note:** If you have more than one, you can list them together and add up the amount.
+  % endif
+fields:
+  - "Other monthly expense": user_expense_other_list[i].name.text
+    maxlength: 25
+  - "Amount": user_expense_other_list[i].amount
+    datatype: currency
+    min: 0.01
+---
+id: any other expenses
+question: |
+  Any other monthly expenses?
+subquestion: |
+  The form has space for **{certain types of expenses}** and up to two other monthly expenses. **Note:** If you have more than one more, you can list them together and add up the amount.
+
+  So far you have told us about:
+  
+  % if user_expense_rent:
+   * $${thousands(user_expense_rent_amount, show_decimals=True)} for rent
+  % endif
+  % if user_expense_mortgage:
+   * $${thousands(user_expense_mortgage_amount, show_decimals=True)} for a home mortgage
+  % endif
+  % if user_expense_other_mortgage:
+   * $${thousands(user_expense_other_mortgage_amount, show_decimals=True)} for another mortgage
+  % endif
+  % if user_expense_utilities:
+   * $${thousands(user_expense_utilities_amount, show_decimals=True)} for utilities
+  % endif
+  % if user_expense_food:
+   * $${thousands(user_expense_food_amount, show_decimals=True)} for food
+  % endif
+  % if user_expense_medical:
+   * $${thousands(user_expense_medical_amount, show_decimals=True)} for medical expenses
+  % endif
+  % if user_expense_car:
+   * $${thousands(user_expense_car_amount, show_decimals=True)} for vehicles, including loans
+  % endif
+  % if user_expense_childcare:
+   * $${thousands(user_expense_childcare_amount, show_decimals=True)} for childcare
+  % endif
+  % if user_expense_child_support:
+   * $${thousands(user_expense_child_support_amount, show_decimals=True)} for child support
+  % endif
+  % for other_expense in user_expense_other_list:
+   * $${thousands(other_expense.amount, show_decimals=True)} for ${other_expense.name.text} 
+  % endfor
+fields:
+  - "Add another expense?": user_expense_other_list.there_is_another
+    datatype: yesnoradio
+---
+terms: 
+  - "certain types of expenses": |
+      These expenses are listed on the ${ form_name } application:
+      
+       * Rent
+       * Home mortgage
+       * Other mortgage
+       * Utilities
+       * Food
+       * Medical
+       * Vehicle, including any loans
+       * Childcare
+       * Child support
+---
+code: |
+  user_expense_other_list[i].name.text
+  user_expense_other_list[i].amount
+  user_expense_other_list[i].complete = True
+---
+code: |
+  if user_expense_other_list.number_gathered() >= 2:
+    user_expense_other_list.there_is_another = False
+---
+#replaced by function mar 2026
+#depends on:
+#  - user_expense_car
+#  - user_expense_child_support
+#  - user_expense_childcare
+#  - user_expense_food
+#  - user_expense_medical
+#  - user_expense_mortgage
+#  - user_expense_other_mortgage
+#  - user_expense_rent
+#  - user_expense_utilities
+#  - user_expense_other
+#  - user_expense_none
+#
+#  - user_expense_car_amount
+#  - user_expense_child_support_amount
+#  - user_expense_childcare_amount
+#  - user_expense_food_amount
+#  - user_expense_medical_amount
+#  - user_expense_mortgage_amount
+#  - user_expense_other_mortgage_amount
+#  - user_expense_rent_amount
+#  - user_expense_utilities_amount
+#  - user_expense_other_list[0].amount
+#  - user_expense_other_list[1].amount
+#code: |
+#  expense_sum = 0
+#
+#  if not user_expense_none:
+#    if user_expense_car:
+#      expense_sum += user_expense_car_amount
+#    if user_expense_child_support:
+#      expense_sum += user_expense_child_support_amount
+#    if user_expense_car:
+#      expense_sum += user_expense_car_amount
+#    if user_expense_child_support:
+#      expense_sum += user_expense_child_support_amount
+#    if user_expense_childcare:
+#      expense_sum += user_expense_childcare_amount
+#    if user_expense_food:
+#      expense_sum += user_expense_food_amount
+#    if user_expense_medical:
+#      expense_sum += user_expense_medical_amount
+#    if user_expense_mortgage:
+#      expense_sum += user_expense_mortgage_amount
+#    if user_expense_other_mortgage:
+#      expense_sum += user_expense_other_mortgage_amount
+#    if user_expense_rent:
+#      expense_sum += user_expense_rent_amount
+#    if user_expense_utilities:
+#      expense_sum += user_expense_utilities_amount
+#    if user_expense_other:
+#      expense_sum += user_expense_other_list[0].amount
+#      expense_sum += user_expense_other_list[1].amount
+#
+#  user_expense_total = expense_sum
+---
+reconsider: True  
+code: |
+  user_expense_total = get_expense_total()
+---
+code: |
+  def get_expense_total():
+    expense_sum = 0
+
+    if user_receives_benefits:
+      return expense_sum
+  
+    if not user_expense_none:
+      if user_expense_car:
+        expense_sum += user_expense_car_amount
+      if user_expense_child_support:
+        expense_sum += user_expense_child_support_amount
+      if user_expense_car:
+        expense_sum += user_expense_car_amount
+      if user_expense_child_support:
+        expense_sum += user_expense_child_support_amount
+      if user_expense_childcare:
+        expense_sum += user_expense_childcare_amount
+      if user_expense_food:
+        expense_sum += user_expense_food_amount
+      if user_expense_medical:
+        expense_sum += user_expense_medical_amount
+      if user_expense_mortgage:
+        expense_sum += user_expense_mortgage_amount
+      if user_expense_other_mortgage:
+        expense_sum += user_expense_other_mortgage_amount
+      if user_expense_rent:
+        expense_sum += user_expense_rent_amount
+      if user_expense_utilities:
+        expense_sum += user_expense_utilities_amount
+      if user_expense_other:
+        expense_sum += user_expense_other_list[0].amount
+        if user_expense_other_list.number() > 1:
+          expense_sum += user_expense_other_list[1].amount
+
+    return expense_sum  
+---
+depends on: filing_basis
+code: |
+  if filing_basis == "filing_self":
+    i_or_they = "I"
+    your_or_their = "your"
+    you_or_they = "you"
+    you_or_obo_name = "you"
+    your_or_obo_possessive = "your"
+    are_is = "are"
+  else:
+    i_or_they = "they"
+    your_or_their = "their"
+    you_or_they = "they"
+    you_or_obo_name = users[0].familiar()
+    your_or_obo_possessive = users[0].familiar() + "'s"
+    are_is = "is"
+---
+continue button field: ask_user_assets  
+id: What assets do you have
+question: |
+  % if filing_basis == "filing_self":
+  What assets do you have?
+  % else:
+  What assets does ${ users[0].familiar() } have?
+  % endif
+subquestion: |
+  % if filing_basis == "filing_self":
+  Assets are things you own, like money, your property, and other belongings.
+  % else:
+  Assets are things ${ users[0].familiar() } owns, like money, their property, and other belongings.
+  % endif
+
+  <span style="color: red;">*</span>You must select at least one option.
+fields:
+  - "No assets": user_asset_none
+    datatype: yesnowide
+    disable others: True
+  - "Bank account or cash": user_asset_bank_account
+    datatype: yesnowide
+  - "Amount": user_asset_bank_account_amount
+    datatype: currency
+    min: 0
+    show if: user_asset_bank_account
+  - "Home ${ i_or_they } live in": user_asset_home
+    datatype: yesnowide
+  - "Value": user_asset_home_amount
+    datatype: currency
+    min: 0
+    show if: user_asset_home
+  - "Amount owed on mortgage": user_asset_home_amount_owed
+    datatype: currency
+    min: 0
+    show if: user_asset_home
+  - "Other real estate": user_asset_other_real_estate
+    datatype: yesnowide
+  - "Value": user_asset_other_real_estate_amount
+    datatype: currency
+    min: 0
+    show if: user_asset_other_real_estate
+  - "Vehicle": user_asset_vehicle1
+    datatype: yesnowide
+  - "Vehicle is paid in full.": user_asset_vehicle1_paid
+    datatype: yesno
+    show if: user_asset_vehicle1
+  - "Value": user_asset_vehicle1_amount
+    datatype: currency
+    min: 0
+    show if: user_asset_vehicle1
+  - "Second vehicle": user_asset_vehicle2
+    datatype: yesno
+    show if: user_asset_vehicle1
+  - "Second vehicle is paid in full.": user_asset_vehicle2_paid
+    datatype: yesno
+    show if: user_asset_vehicle2    
+  - "Value of second vehicle": user_asset_vehicle2_amount
+    datatype: currency
+    min: 0
+    show if: user_asset_vehicle2
+  - "Other assets not listed above": user_asset_other
+    datatype: yesnowide
+    help: |
+      Examples of other assets include:
+      
+        * Stocks,
+        * Bonds,
+        * Jewelry, or      
+        * Collectibles.
+validation code: |
+  if not (user_asset_none or user_asset_bank_account or user_asset_home or user_asset_other_real_estate or user_asset_vehicle1 or user_asset_other):
+    validation_error("Check at least one option.", field="user_asset_other")
+---
+id: user other assets details
+question: |
+  % if filing_basis == "filing_self":
+  What other asset you have?
+  % else:
+  What other asset does ${ users[0].familiar() } have?
+  % endif
+subquestion: |
+  Enter the item and its value.
+
+  % if i == 1:
+  **Note:** If you have more than one, you can list them together and add up the amount.
+  % endif
+fields:
+  - "Other asset": user_asset_other_list[i].name.text
+    maxlength: 25
+  - "Value": user_asset_other_list[i].amount
+    datatype: currency
+    min: 0.01
+---
+id: any other assets
+question: |
+  Any other assets?
+subquestion: |
+  The form has space for **{certain types of assets}** and up to two other assets. **Note:** If you have more than one more, you can list them together and add up the amount.
+
+  So far you have told us about these assets:
+  
+  % if user_asset_bank_account:
+   * Bank accounts or cash worth $${thousands(user_asset_bank_account_amount, show_decimals=True)}
+  % endif
+  % if user_asset_home:
+   * A home ${you_or_they} live in worth $${thousands(user_asset_home_amount, show_decimals=True)}
+  % endif
+  % if user_asset_other_real_estate:
+   * Other real estate (not including the home ${you_or_they} live in) worth $${thousands(user_asset_other_real_estate_amount, show_decimals=True)}
+  % endif
+  % if user_asset_vehicle1:
+   * A vehicle worth $${thousands(user_asset_vehicle1_amount, show_decimals=True)}
+  % if user_asset_vehicle2:
+   * A second vehicle worth $${thousands(user_asset_vehicle2_amount, show_decimals=True)}
+  % endif
+  % endif
+  % for other_asset in user_asset_other_list:
+   * ${other_asset.name.text} worth $${thousands(other_asset.amount, show_decimals=True)}
+  % endfor
+fields:
+  - "Add another asset?": user_asset_other_list.there_is_another
+    datatype: yesnoradio
+---
+terms: 
+  - "certain types of assets": |
+      These assets are listed on the ${ form_name } application:
+      
+       * Money in bank accounts or cash
+       * A home
+       * Other real estate
+       * Vehicles
+---
+code: |
+  user_asset_other_list[i].name.text
+  user_asset_other_list[i].amount
+  user_asset_other_list[i].complete = True
+---
+code: |
+  if user_asset_other_list.number_gathered() >= 2:
+    user_asset_other_list.there_is_another = False
+
+---
+# replaced by function march 2026
+#depends on:
+#  - user_asset_bank_account_amount
+#  - user_asset_home_amount
+#  - user_asset_other_real_estate_amount
+#  - user_asset_vehicle1_amount
+#  - user_asset_vehicle2_amount
+#  - user_asset_other_list[0].amount
+#  - user_asset_other_list[1].amount
+#code: |
+#  user_asset_total = (sum_if_defined(
+#    'user_asset_bank_account_amount'
+#    'user_asset_home_amount'
+#    'user_asset_other_real_estate_amount'
+#    'user_asset_vehicle1_amount',
+#    'user_asset_vehicle2_amount',
+#    'user_asset_other_list[0].amount',
+#    'user_asset_other_list[1].amount') - sum_if_defined('user_asset_home_amount_owed') )
+---
+reconsider: True
+code: |
+  user_asset_total = get_asset_total()
+---
+code: |
+  def get_asset_total():
+    asset_sum = 0
+
+    if user_receives_benefits:
+      return asset_sum
+
+    if not user_asset_none:
+      if user_asset_bank_account:
+        asset_sum += user_asset_bank_account_amount
+      if user_asset_home:
+        asset_sum += user_asset_home_amount
+      if user_asset_other_real_estate:
+        asset_sum += user_asset_other_real_estate_amount
+      if user_asset_vehicle1:
+        asset_sum += user_asset_vehicle1_amount
+        if user_asset_vehicle2:
+          asset_sum += user_asset_vehicle2_amount
+      if user_asset_other:
+        asset_sum += user_asset_other_list[0].amount
+        if user_asset_other_list.number() > 1:
+          asset_sum += user_asset_other_list[1].amount
+
+    return asset_sum
+---
+depends on:
+  - user_income_total
+  - user_annual_total
+code: |
+  if not user_is_incarcerated and user_has_dependents:
+    household_size = 1 + user_dependents_adults + user_dependents_children
+    last_month_income_qualifies = poverty_scale_income_qualifies(user_income_total, household_size=household_size, multiplier=1.25)
+    last_year_income_qualifies = poverty_scale_income_qualifies(user_annual_total/12, household_size=household_size, multiplier=1.25)
+    last_month_income_qualifies_partial = poverty_scale_income_qualifies(user_income_total, household_size=household_size, multiplier=2.0)
+    last_year_income_qualifies_partial = poverty_scale_income_qualifies(user_annual_total/12, household_size=household_size, multiplier=2.0)
+  
+  else:
+    household_size = 1
+    last_month_income_qualifies = poverty_scale_income_qualifies(user_income_total, multiplier=1.25)
+    last_year_income_qualifies = poverty_scale_income_qualifies(user_annual_total/12, multiplier=1.25)
+    last_month_income_qualifies_partial = poverty_scale_income_qualifies(user_income_total, multiplier=2.0)
+    last_year_income_qualifies_partial = poverty_scale_income_qualifies(user_annual_total/12, multiplier=2.0)
+
+---
+id: show_qualification_guess
+continue button field: show_qualification_guess
+question: |
+  How to qualify for a waiver
+subquestion: |  
+  The judge will consider ${ your_or_their } income, assets, and expenses.
+  
+  You said ${ your_or_their } income in the past month was 
+  ${ currency(get_income_total()) }, and ${ your_or_their} income over the last 12 months was 
+  ${ currency(get_annual_total()) } (${ currency(get_annual_total()/12) }
+  per month). The judge will look at income from last month and the average monthly income over the last 12 months.
+  
+  For a **full ${ form_name }**, with ${ your_or_their} household size, ${ your_or_their } monthly income needs to be at or below 
+  ${ currency(poverty_scale_get_income_limit(household_size=household_size, multiplier=1.25)/12) }. For a **partial ${ form_name }**, it needs to be between ${ currency(poverty_scale_get_income_limit(household_size=household_size, multiplier=1.25)/12) } and ${ currency(poverty_scale_get_income_limit(household_size=household_size, multiplier=2.0)/12) } per month.
+  
+  The judge will also consider ${ your_or_their } total assets of ${ currency(get_asset_total()) }
+  and ${ your_or_their } total monthly expenses of ${ currency(user_expense_total) }.
+
+  % if filing_basis == "filing_self":
+  <div class="alert alert-info ilao-info" role="alert">
+    <h6 class="alert-heading">Explain other reasons why you need an ${ form_name }</h6>
+    <p>You can tell the judge about other reasons why it is hard for you to pay for court costs on another screen. This will be added to your ${ form_name } application.</p>
+  </div>
+  % else:
+  <div class="alert alert-info ilao-info" role="alert">
+    <h6 class="alert-heading">Explain other reasons why ${ users[0].familiar() } needs an ${ form_name }</h6>
+    <p>You can tell the judge about other reasons why it is hard for ${ users[0].familiar() } to pay for court costs on another screen. This will be added to their ${ form_name } application.</p>
+  </div>
+  % endif 
+  
+  #### A judge makes the final decision
+  This website cannot tell you if ${ you_or_they } qualify for sure. The judge will
+  consider all of the information you provide.
+  
+  ${ collapse_template(other_fee_waiver_considerations) }  
+
+---
+template: other_fee_waiver_considerations
+subject: |
+  **What else the judge will consider**
+content: |  
+  The judge will look at all of the information that you provide on the ${ form_name } application
+  to decide if ${ you_or_they } qualify. For example, the judge will compare ${ your_or_their }
+  assets and expenses. They will also read any additional explanation that you
+  decide to provide.
+  
+  Some of ${ your_or_their } assets will not be counted. For example: the value of ${ your_or_their } car,
+  up to $3,600, is not counted. A person can have up to $4,000 in other assets,
+  such as bank accounts, that are not counted. The assets that are not
+  counted are set by law: specifically, 
+  [**735 ILCS 5/12-901**](https://www.ilga.gov/legislation/ilcs/fulltext.asp?DocName=073500050K12-1001)
+  and [**735 ILCS 5/12-1001**](https://www.ilga.gov/legislation/ilcs/fulltext.asp?DocName=073500050K12-901).
+  
+  The judge may decide that ${ you_or_they } qualify for a partial reduction in court fees even if ${ you_or_they } do not qualify for a full waiver.  
+---
+id: your contact information
+generic object: ALIndividual
+question: |
+  What is your contact information?
+subquestion: |
+  The court or other parties might need to contact you about this case.
+
+  **This information will appear on your court forms.**
+  
+  If you do not want to list a phone number on your forms, leave it blank.
+
+  If you have an email address, you must list it. Be sure to check your email daily, otherwise you may miss important court documents or information about your case.
+
+  ${ collapse_template(contact_info_help) }  
+fields:  
+  - Phone number: x.phone_number
+    datatype: al_international_phone
+    required: False
+  - label: |
+      Do you have an email address?
+    field: x.has_email_address      
+    datatype: yesnoradio
+  - note: |
+      This email address will appear on your court forms. Be sure to check 
+      this email daily, otherwise you may miss important information about 
+      your case.
+    show if: x.has_email_address      
+  - Email address: x.email    
+    datatype: email
+    show if: 
+      variable: x.has_email_address
+      is: True
+---
+template: contact_info_help
+subject: |
+  **What if I don't want to list my email address?**
+content: |  
+  If you do not want to enter your personal email address, you can create a new email account to get email about your case.
+  
+  To make a new email account try one of these email services:
+  
+  * [**Gmail**](https://accounts.google.com/SignUp)
+  * [**Outlook**](https://outlook.live.com/owa/?nlp=1&signup=1)
+  * [**Yahoo**](https://login.yahoo.com/account/create?.lang=en-US&.intl=us)
+---
+id: substantial hardship
+question: |
+  % if filing_basis == "filing_self":
+  Will paying court fees be hard for you or your family?
+  % else:
+  Will paying court fees be hard for ${ users[0].familiar() } or their family?
+  % endif
+subquestion: |
+  % if filing_basis == "filing_self":
+  If you want to explain to a judge why you would be harmed if you do not
+  get an ${ form_name }, you can explain it here. This is optional.
+  
+  Complete this sentence:
+  
+  **It would be a substantial hardship for me or my family if I have to pay the fees, costs, and charges because:**
+  % else:
+  If you want to explain to the judge why ${ users[0].familiar() } would be 
+  harmed if they do not get an ${ form_name }, you can explain it here. This is optional.
+  
+  Complete this sentence:
+  
+  **It would be a substantial hardship for ${ users[0].familiar() } or their family if they have to pay the fees, costs, and charges because:**
+  % endif
+fields:
+  - no label: substantial_hardship_explanation
+    datatype: area
+    rows: 16
+    maxlength: 1200
+    required: False
+  - note: |
+      The form has room for about **1,200 characters** including spaces.
+---
+id: any other users
+question: |
+  % if al_form_type in ['starts_case','existing_case','appeal']:
+    Is anyone else on ${ your_or_obo_possessive } side of the circuit court case?
+  % else:
+    % if filing_basis == "filing_self":
+    Is anyone else adding their name to this form with you?
+    % else:
+    Is anyone else adding their name to this form with ${ users[0].familiar() }?
+    % endif
+  % endif
+subquestion: |
+  % if len(users.elements) > 1:  
+  So far you have told us about ${fix_punctuation(users.full_names())}
+  % endif  
+fields:
+  - no label: users.there_is_another
+    datatype: yesnoradio
+---
+sets:
+  - users[i].name.first
+id: other users names
+question: |
+  % if al_form_type in ['starts_case','existing_case','appeal']:
+    % if filing_basis == "filing_self":
+    What is the name of the ${ ordinal(i) } person who is part of the circuit court case with you?
+    % else:
+    What is the name of the ${ ordinal(i) } person who is part of the circuit court case with ${ users[0].familiar() }?
+    % endif
+  % else:
+    % if filing_basis == "filing_self":
+    What is the name of the ${ ordinal(i) } person who is adding their name to this form with you?
+    % else:
+    What is the name of the ${ ordinal(i) } person who is adding their name to this form with ${ users[0].familiar() }?
+    % endif
+  % endif
+subquestion: |
+  ${ collapse_template(long_name_help) }
+fields:
+  - code: |
+      users[i].name_fields(person_or_business='unsure')
+---
+template: long_name_help
+subject: |
+  **What if I need more space?**
+content: |
+  If the party has a long name like "Jane Smith, Director of Housing," select **Business or organization**. You can then enter the full name and title.
+---
+id: is there an opposing party?
+question: |
+  % if al_form_type in ['starts_case','existing_case','appeal'] and user_started_case:
+  Is there a **defendant** or **respondent** in the circuit court case? 
+  % elif al_form_type in ['starts_case','existing_case','appeal']:
+  Is there a **plaintiff** or **petitioner** in the circuit court case?
+  % else:
+  Is there someone on the other side of your dispute?
+  % endif
+subquestion: |
+  % if al_form_type in ['starts_case','existing_case','appeal'] and user_started_case:
+  Answer **Yes** if ${ you_or_obo_name } sued a person or organization.
+  % elif al_form_type in ['starts_case','existing_case','appeal']:
+  You should be able to find out from the paperwork that told ${ you_or_obo_name } to 
+  go to court.
+
+  Answer **Yes** if someone else has sued ${ you_or_obo_name } or is bringing ${ you_or_obo_name } to court.
+  % endif
+fields:
+  - no label: other_parties.there_are_any
+    datatype: yesnoradio
+---
+id: any other opposing parties
+question: |
+  % if users==plaintiffs:
+  Is there another **defendant** or **respondent** in the circuit court case?
+  % else:
+  Is there another **plaintiff** or **petitioner** in the circuit court case?
+  % endif
+subquestion: |
+  % if len(other_parties.elements) >= 1:
+  So far you have told us about ${fix_punctuation(other_parties.full_names())}
+  % endif
+fields:
+  - no label: other_parties.there_is_another
+    datatype: yesnoradio
+---
+id: names of opposing parties
+sets:
+  - other_parties[i].name.first
+  - other_parties[i].name.last
+  - other_parties[i].name.middle
+  - other_parties[i].name.suffix
+question: |
+  % if users==plaintiffs:
+  What is the name of the ${ ordinal(i) } **defendant** or **respondent** in the circuit court
+  case?
+  % else:
+  What is the name of the ${ ordinal(i) } **plaintiff** or **petitioner** in the circuit court case?
+  % endif
+subquestion: |
+  ${ collapse_template(long_name_help) }
+fields:
+  - code: |
+      other_parties[i].name_fields(person_or_business='unsure')
+---
+id: in re check
+question: |
+ Does the circuit court case have the words "**In re:**" in the name?
+subquestion: |
+  Look at the name of the case at the top of the circuit court papers. "In re" is often used in probate, guardianship, and some family law cases. For example, a probate case regarding Jane Doe’s estate might be called "In re: Estate of Jane Doe."
+  
+  **Note:** If the circuit court papers say "In re:" but also list the names of people in the case, you can select **No**. For example, if the case title is "In re: Marriage of Julia Smith and Tony Smith," the names you already entered will be put on your forms. 
+fields:
+  - no label: in_re_check
+    datatype: yesnoradio
+---
+id: in re label
+question: |
+  What does it say after "**In re:**" on the circuit court papers?
+subquestion: |
+  For example, the case could be called "In re: The Will of Elena Black."
+fields:
+  - In re:: in_re_label
+    maxlength: 50
+---
+id: address
+#generic object: ALIndividual
+sets:
+  - users[0].address.address
+  - users[0].address.city
+  - users[0].address.zip
+question: |
+  What is your address?
+subquestion: |
+  % if filing_basis != "filing_self":
+    **Note:** Enter your own address here, not ${ users[0].familiar() }'s address.
+  % endif  
+
+fields:
+  - Street address: users[0].address.address
+    address autocomplete: True
+  - Address line 2: users[0].address.unit
+    required: False
+  - City: users[0].address.city
+  - State: users[0].address.state
+    code: |
+      states_list()
+    default: IL      
+  - ZIP code: users[0].address.zip    
+---
+id: circuit court case number
+question: |
+  What is ${ your_or_obo_possessive } circuit court case number?
+subquestion: |
+  The case number will be listed on ${ your_or_obo_possessive } court papers. The circuit clerk gives each case a number when it is filed.
+  
+  ${ collapse_template(case_number_help) }  
+fields:
+  - Circuit court case number: docket_number
+    maxlength: 20
+---
+template: case_number_help
+subject: |
+  **Where to find the case number**
+content: |  
+  The case number should be on your court papers. Look at the Complaint or Petition, or the Summons if you received one. It is usually in the top-right part of the first page.
+  
+  If you started the case, the court clerk should have given you the case number.
+  
+  In this example, the case number is **2022 EXAMPLE 123**.
+  
+  [FILE case_number_example.png, 100%, Summons form showing case number]
+---
+id: appellate court case number
+question: |
+  Do you know ${ your_or_obo_possessive } appellate court case number?
+subquestion: |
+  In Illinois, the appellate case number is assigned by the appellate court clerk after the appeal is filed. The case number will be listed on ${ your_or_obo_possessive } appellate court papers.
+  
+  If the appeal has not been filed yet, select **I don't know the appellate court case number.**
+
+  ${ collapse_template(appellate_case_number_help) }  
+fields:
+  - "I don't know the appellate court case number.": dont_know_appellate_case_number
+    datatype: yesno    
+  - Appellate court case number: appellate_case_number
+    maxlength: 20
+    hide if: dont_know_appellate_case_number
+validation code: |
+  if dont_know_appellate_case_number:
+    appellate_case_number = ''      
+---
+template: appellate_case_number_help
+subject: |
+  **Where to find the appellate case number**
+content: |  
+  The case number will be listed on ${ your_or_obo_possessive } appellate court papers. It is usually at the top or in the top-right part of the first page.
+    
+  In this example, the case number is **2026 AP 000321**.
+  
+  [FILE appellate_case_number_example.png, 100%, Appellate form showing appellate case number]
+---
+id: appellate district
+question: |
+  Which appellate district was the appeal filed in?
+subquestion: |
+  If the case was already filed in the appellate court, the appellate district should be listed near the top of the appellate court forms.
+
+  If you are starting a new appeal, you can use this [map of Illinois Judicial Districts](https://www.illinoiscourts.gov/courts/appellate-court/) to find the appellate district where you should file.
+fields:
+  - Appellate district: appellate_district
+    input type: radio
+    choices:
+      - First: First
+      - Second: Second
+      - Third: Third
+      - Fourth: Fourth
+      - Fifth: Fifth
+---
+id: juvenile act involvement
+question: |
+  Does the case involve a minor in juvenile delinquency proceedings?
+subquestion: |
+  If the case involves a delinquent minor proceeding under the Juvenlie Court Act, select **Yes**.
+fields:
+  - "Case involves a juvenile delinquency proceeding?": juvenile_act_involvement
+    datatype: yesnoradio
+---
+id: minor involvement
+question: |
+  Does the case involve a minor child?
+subquestion: |
+  Some appeals move more quickly if they involve any of the following:
+
+  * Parental responsibilities (custody),
+  * Parenting time (visitation), or
+  * Relocation of a child (removal).
+
+  If the case involves a minor child, but not in the ways described above, select **No**.
+fields:
+  - "Case involves a minor child?": minor_involvement
+    datatype: yesnoradio
+---
+id: trial court judge name
+question: |
+  What is the name of the circuit court judge who issued the order being appealed?
+subquestion: |  
+  You do not need to enter the judge's full name. You are only required to enter the judge's last name.  
+fields:
+  - First: judge.name.first
+    required: False
+  - Middle: judge.name.middle
+    required: False
+  - Last: judge.name.last
+  - Suffix: judge.name.suffix
+    required: False
+    code: |
+      name_suffix()
+---
+id: who is filing appeal
+question: |
+  Who is filing the appeal?
+subquestion: |
+  The person or company who the circuit court ruled against is usually the one who files the appeal. These are the participants in your case:
+
+  Your side:
+
+  % for item in users:
+  * ${ item.name_full() }
+  % endfor
+
+  The other side:
+
+  % if not other_parties.there_are_any:
+  * None entered
+  % else:
+  % for item in other_parties:
+  * ${ item.name_full() }
+  % endfor
+  % endif
+  
+  If you or someone on your side of the case is asking the appellate court to review an order of the circuit court, select **Me or someone on my side**.
+
+  If you or someone on the other side of the case is asking the appellate court to review an order of the circuit court, select **Someone on the other side**.
+fields:
+  - Who is filing the appeal?: user_is_appellant
+    datatype: radio
+    choices:
+      - Me or someone on my side: True
+      - Someone on the other side: False
+---
+id: e-signature
+question: |
+  Do you want to add your e-signature to your ${ form_name }?
+subquestion: |
+  This program can put "**/s/ ${users[0].name_full()}**" where you would sign your name. The court will accept this as your signature.
+
+  If you do not add your **{e-signature}**, you must sign your paper form before you file it.
+
+  <div class="alert alert-info ilao-info" role="alert">
+    <h6 class="alert-heading">What it means to sign your forms</h6>
+    <p>By signing your <i>Application for Waiver of Appellate Court Fees</i>, you are certifying that:</p>
+    <p><ul>
+      <li>Everything on the form is true and correct, or you have been informed or believe it to be true and correct, and</li>
+      <li>You understand that making a false statement on the form is perjury and has penalties provided by law.</li>
+    </ul></p>
+  <p>See the <a href="https://www.ilga.gov/legislation/ilcs/documents/073500050k1-109.htm"><b>Illinois Code of Civil Procedure, 735 ILCS 5/1-109</b></a> for more information.</p>
+  </div>
+fields:
+  - "Add e-signature?": e_signature
+    datatype: yesnoradio
+terms:
+  - "e-signature": |
+      An e-signature is an electronic signature. It is a digital version of a signature that has the same effect as a hand-written signature. 
+---
+id: signature choice
+decoration: file-signature
+question: |
+  Sign your forms
+subquestion: |
+  Your forms are almost ready. 
+  
+  You need to sign your forms before you file. You can:
+  
+  * Sign with your finger on a smartphone,
+  * Sign with the mouse or touchpad on your computer,
+  * Add your name as an e-signature **(recommended)**, or
+  * Sign the forms by hand after you download and print.
+field: signature_choice
+buttons:  
+  - Sign on my phone: phone
+    image: mobile-alt
+  - Sign on this device: this device
+    image: desktop
+  - Just add my name: add name
+    image: keyboard
+  - Sign later: no signature
+    image: print
+continue button field: saw_signature_choice
+script: |
+  <script>
+    $(".da-field-buttons > div > .btn-da-custom").last().after("<br>")
+    $(".da-field-buttons > div > .btn-da-custom").first().before("<br>")
+  </script>
+---
+id: bring documents
+continue button field: bring_docs
+question: |
+  Next steps and supporting documents
+subquestion: |
+  After you file your ${ form_name } application, a judge will review it. If they have questions, you may need to give more information or documentation. For example, you may be asked to show:
+  
+  * Proof of public benefits received,
+  * Proof of income, and
+  * The value of any belongings.
+  
+  **Note:** Some courts require that you submit proof of benefits or income when you file your ${ form_name } application. If you are e-filing, you may need to upload proof of benefits or income. The appellate clerk will let you know how to provide more information for your application.
+
+  Once the court decides, they will send you an order. This order will say if you must pay none of the court fees, some of the court fees, or all of the court fees.
+  
+  Finally, the appellate clerk will mail or email you a copy of the order.  
+---
+id: forms assembling
+continue button field: forms_assembling
+question: |
+  Almost done
+subquestion: |
+  After you click **Next**, it may take a few moments to finish making your forms.
+
+  ###### You do not need to refresh your screen. Hang in there!
+  
+  [NEWLINE]
+---
+id: get docs screen
+event: get_docs_screen
+question: |
+  Download
+subquestion: |
+  Your forms are ready. View and download your forms below. Click **:edit: Make changes** to fix any mistakes.
+
+  This program **does not file** your ${form_name} with the court. You will need to do this yourself. Learn about [**e-filing in Illinois**](https://www.illinoiscourts.gov/eservices/information-for-filers-without-lawyers).
+
+  ${ action_button_html(url_action('review_answers'), label=':edit: Make changes', color='success', size="md") }
+  
+  ${ al_user_bundle.download_list_html() }
+
+  &nbsp;
+
+  ${ al_user_bundle.send_button_html(show_editable_checkbox=False) }
+
+  **Note:** This program **does not file** your ${form_name} with the court. Learn about [**e-filing in Illinois**](https://www.illinoiscourts.gov/eservices/information-for-filers-without-lawyers).
+  
+  Thank you for using ILAO Easy Forms!
+#buttons:
+  #- ${fa_icon("envelope", color="#0079d0", size="sm")} Email your forms: continue
+under: |
+  % if not user_logged_in():
+  [${fa_icon("sign-in-alt", color="#0079d0", size="sm")} Sign-in](${url_of('login', next=interview_url())}) or [**create**](${url_of('register', next=interview_url())}) an ILAO Easy Form account to save your progress (optional).
+  % endif 
+
+  &nbsp;
+  ${ action_button_html(interview_url(i="docassemble.ILAO:feedback.yml", easy_form_interview=ilao_easy_form_url, easy_form_title=ilao_easy_form_title, easy_form_page=current_context().question_id, easy_form_variable=current_context().variable, local=False,reset=1), label=':comment: Was this program helpful?', color="#181c36", size="md", new_window=True) }
+
+---
+generic object: ALDocumentBundle
+template: x.send_email_template
+subject: |
+  Fee waiver - Appellate Court forms
+content: |
+  Your forms are attached.
+  
+  Thanks for using ILAO Easy Forms!
+  
+  [Illinois Legal Aid Online](https://www.illinoislegalaid.org)
+---
+objects:
+  - instructions: ALDocument.using(title="Instructions", filename="instructions.pdf", has_addendum=False)
+  - application: ALDocument.using(title="Appellate fee waiver application", filename="application.pdf", has_addendum=False)
+---
+code: |
+  instructions.enabled = True
+  application.enabled = True
+---
+objects:
+  - al_user_bundle: ALDocumentBundle.using(elements=[instructions, application], filename="appellate_fee_waiver_package.pdf", title="All forms")
+  - al_court_bundle: ALDocumentBundle.using(elements=[application], filename="appellate_fee_waiver_package.pdf", title="All forms")
+---
+attachments:
+  - name: instructions
+    filename: instructions     
+    variable name: instructions[i]        
+    pdf template file: instructions.pdf
+    editable: False
+    fields:
+        - "fake": ${ "" }
+---
+attachments:
+  - name: application
+    filename: application     
+    variable name: application[i]        
+    skip undefined: True
+    pdf template file: application.pdf
+    editable: False
+    fields:
+      - "minor_involvement": ${ minor_involvement }
+      - "juvenile_act_involvement": ${ juvenile_act_involvement }
+      - "supreme_case_number_1": ${supreme_case_number}
+      - "supreme_case_number_2": ${supreme_case_number}
+      - "supreme_case_number_3": ${supreme_case_number}
+      - "supreme_case_number_4": ${supreme_case_number}
+      - "supreme_case_number_5": ${supreme_case_number}
+      - "appellate_case_number": ${ appellate_case_number }
+      - "appellate_district": ${ appellate_district }
+      - "trial_court_county": ${ trial_court.address.county }
+      - "docket_number": ${ docket_number }
+      - "trial_court_judge_name": ${ judge.name_full() }
+      - "in_re": ${ in_re_label if in_re_check else "" }
+      - "plaintiff": ${plaintiffs.full_names() }
+      - "defendant": ${defendants.full_names() }
+      - "pla_appellant": ${ True if (user_ask_role == "plaintiff" and user_is_appellant) or ( user_ask_role == "defendant" and not user_is_appellant) else ""}
+      - "pla_appellee": ${ True if (user_ask_role == "plaintiff" and not user_is_appellant) or ( user_ask_role == "defendant" and user_is_appellant) else ""}
+      - "def_appellant": ${ True if (user_ask_role == "plaintiff" and not user_is_appellant) or ( user_ask_role == "defendant" and user_is_appellant) else ""}
+      - "def_appellee": ${ True if (user_ask_role == "plaintiff" and user_is_appellant) or ( user_ask_role == "defendant" and not user_is_appellant) else ""}
+      - "filing_self_cb": ${ True if filing_basis == "filing_self" else ""}
+      - "filing_obo_cb": ${ True if filing_basis != "filing_self" else ""}
+      - "user_name_full": ${ users[0].name_full() }
+      - "user_address": ${ users[0].address.on_one_line(bare=True) }
+      - "signer_name_full": ${ users[0].name_full() }
+      - "incarcerated_no": ${ not user_is_incarcerated }
+      - "incarcerated_yes": ${ user_is_incarcerated }
+      - "inmate_id": ${ inmate_id if user_is_incarcerated else "" }
+      - "trust_account_balance": ${ thousands(trust_account_balance, show_decimals=True) if user_is_incarcerated else "" }
+      - "signer_signature_no_slash": ${ users[0].name_full() if e_signature else '' }
+      - "signer_email": ${ users[0].email if users[0].has_email_address else "" }
+      - "user_address_one_line__2": ${ users[0].address.on_one_line(bare=True) }
+      - "signer_phone_number": ${ phone_number_formatted(users[0].phone_number) }
+      - "user_dependents_adults": |
+          % if not user_is_incarcerated:
+          % if user_has_dependents:
+          ${ user_dependents_adults }
+          % else:
+          0
+          % endif
+          % endif
+      - "user_dependents_children": |
+          % if not user_is_incarcerated:
+          % if user_has_dependents:
+          ${ user_dependents_children }
+          % else:
+          0
+          % endif
+          % endif
+      - "benefits_ssi": |
+          % if not user_is_incarcerated:
+          ${ True if user_benefits['SSI'] == True else '' }
+          % endif
+      - "benefits_aabd": |
+          % if not user_is_incarcerated:
+          ${ True if user_benefits['AABD'] == True else '' }
+          % endif
+      - "benefits_ga": |
+          % if not user_is_incarcerated:
+          ${ True if user_benefits['GA'] == True else '' }
+          % endif
+      - "benefits_snap": |
+          % if not user_is_incarcerated:
+          ${ True if user_benefits['SNAP'] == True else '' }
+          % endif
+      - "benefits_tanf": |
+          % if not user_is_incarcerated:
+          ${ True if user_benefits['TANF'] == True else '' }
+          % endif
+      - "user_receives_benefits_yes": |
+          % if not user_is_incarcerated:
+          ${ user_benefits.any_true() }
+          % endif
+      - "user_receives_benefits_no": |
+          % if not user_is_incarcerated:
+          ${ user_benefits.all_false() }
+          % endif
+      - "user_pending_benefits_yes": |
+          % if user_is_incarcerated:
+          ${user_applied_for_benefits}
+          % else:
+          ${user_applied_for_benefits and user_benefits.all_false()}
+          % endif
+      - "user_pending_benefits_no": |
+          % if user_is_incarcerated:
+          ${not user_applied_for_benefits}
+          % else:
+          ${not user_applied_for_benefits and user_benefits.all_false()}
+          % endif
+      - "user_income_employment":  |
+          % if user_is_incarcerated:
+          % if not user_income_none:
+          ${ user_income_employment }
+          % endif
+          % elif not user_income_none and user_benefits.all_false():
+          ${ user_income_employment }
+          % endif
+      - "user_income_employment_amount":  |
+          % if user_is_incarcerated:
+          % if not user_income_none and user_income_employment:
+          ${ thousands(user_income_employment_amount, show_decimals=True) }
+          % endif
+          % elif not user_income_none and user_income_employment and user_benefits.all_false():
+          ${ thousands(user_income_employment_amount, show_decimals=True) }
+          % endif
+      - "user_income_ss": |
+          % if user_is_incarcerated:
+          % if not user_income_none:
+          ${ user_income_ss }
+          % endif
+          % elif not user_income_none and user_benefits.all_false():
+          ${ user_income_ss }
+          % endif
+      - "user_income_ss_amount":  |
+          % if user_is_incarcerated:
+          % if not user_income_none and user_income_ss:
+          ${ thousands(user_income_ss_amount, show_decimals=True) }
+          % endif
+          % elif not user_income_none and user_income_ss and user_benefits.all_false():
+          ${ thousands(user_income_ss_amount, show_decimals=True) }
+          % endif
+
+      - "user_income_child_support":  |
+          % if user_is_incarcerated:
+          % if not user_income_none:
+          ${ user_income_child_support }
+          % endif
+          % elif not user_income_none and user_benefits.all_false():
+          ${ user_income_child_support }
+          % endif
+      - "user_income_child_support_amount":  |
+          % if user_is_incarcerated:
+          % if not user_income_none and user_income_child_support:
+          ${ thousands(user_income_child_support_amount, show_decimals=True) }
+          % endif
+          % elif not user_income_none and user_income_child_support and user_benefits.all_false():
+          ${ thousands(user_income_child_support_amount, show_decimals=True) }
+          % endif
+
+      - "user_income_unemployment":  |
+          % if user_is_incarcerated:
+          % if not user_income_none:
+          ${ user_income_unemployment }
+          % endif
+          % elif not user_income_none and user_benefits.all_false():
+          ${ user_income_unemployment }
+          % endif
+      - "user_income_unemployment_amount":  |
+          % if user_is_incarcerated:
+          % if not user_income_none and user_income_unemployment:
+          ${ thousands(user_income_unemployment_amount, show_decimals=True) }
+          % endif
+          % elif not user_income_none and user_income_unemployment and user_benefits.all_false():
+          ${ thousands(user_income_unemployment_amount, show_decimals=True) }
+          % endif
+
+      - "user_income_pension":  |
+          % if user_is_incarcerated:
+          % if not user_income_none:
+          ${ user_income_pension }
+          % endif
+          % elif not user_income_none and user_benefits.all_false():
+          ${ user_income_pension }
+          % endif
+      - "user_income_pension_amount":  |
+          % if user_is_incarcerated:
+          % if not user_income_none and user_income_pension:
+          ${ thousands(user_income_pension_amount, show_decimals=True) }
+          % endif
+          % elif not user_income_none and user_income_pension and user_benefits.all_false():
+          ${ thousands(user_income_pension_amount, show_decimals=True) }
+          % endif
+
+      - "user_income_household":  |
+          % if user_is_incarcerated:
+          % if not user_income_none:
+          ${ user_income_household }
+          % endif
+          % elif not user_income_none and user_benefits.all_false():
+          ${ user_income_household }
+          % endif
+      - "user_income_household_amount":  |
+          % if user_is_incarcerated:
+          % if not user_income_none and user_income_household:
+          ${ thousands(user_income_household_amount, show_decimals=True) }
+          % endif
+          % elif not user_income_none and user_income_household and user_benefits.all_false():
+          ${ thousands(user_income_household_amount, show_decimals=True) }
+          % endif
+
+      - "user_income_other":  |
+          % if user_is_incarcerated:
+          % if not user_income_none:
+          ${ user_income_other }
+          % endif
+          % elif not user_income_none and user_benefits.all_false():
+          ${ user_income_other }
+          % endif
+      - "user_income_other_amount_1":  |
+          % if user_is_incarcerated:
+          % if not user_income_none and user_income_other:
+          ${ thousands(user_income_other_list[0].amount, show_decimals=True) }
+          % endif
+          % elif not user_income_none and user_income_other and user_benefits.all_false():
+          ${ thousands(user_income_other_list[0].amount, show_decimals=True) }
+          % endif
+      - "user_income_other_kind_1":  |
+          % if user_is_incarcerated:
+          % if not user_income_none and user_income_other:
+          ${ user_income_other_list[0].name.text }
+          % endif
+          % elif not user_income_none and user_income_other and user_benefits.all_false():
+          ${ user_income_other_list[0].name.text }
+          % endif
+      - "user_income_other_amount_2":  |
+          % if user_is_incarcerated:
+          % if not user_income_none and user_income_other and user_income_other_list.number() > 1:
+          ${ thousands(user_income_other_list[1].amount, show_decimals=True) }
+          % endif
+          % elif not user_income_none and user_income_other and user_income_other_list.number() > 1 and user_benefits.all_false():
+          ${ thousands(user_income_other_list[1].amount, show_decimals=True) }
+          % endif
+      - "user_income_other_kind_2":  |
+          % if user_is_incarcerated:
+          % if not user_income_none and user_income_other and user_income_other_list.number() > 1:
+          ${ user_income_other_list[1].name.text }
+          % endif
+          % elif not user_income_none and user_income_other and user_income_other_list.number() > 1 and user_benefits.all_false():
+          ${ user_income_other_list[1].name.text }
+          % endif
+
+      - "user_income_none":  |
+          % if user_is_incarcerated:
+          ${ user_income_none }
+          % elif user_benefits.all_false():
+          ${ user_income_none }
+          % endif
+      - "user_income_total":  |
+          % if user_is_incarcerated:
+          % if not user_income_none:
+          ${ thousands(user_income_total, show_decimals=True) }
+          % endif
+          % elif not user_income_none and user_benefits.all_false():
+          ${ thousands(user_income_total, show_decimals=True) }
+          % endif          
+
+      - "user_annual_employment": |           
+          % if user_is_incarcerated:
+          % if not user_annual_none:
+          ${ user_annual_employment }
+          % endif
+          % elif not user_annual_none and user_benefits.all_false():
+          ${ user_annual_employment }
+          % endif
+      - "user_annual_employment_amount": |
+          % if user_is_incarcerated:
+          % if not user_annual_none and user_annual_employment:
+          ${ thousands(user_annual_employment_amount, show_decimals=True) }
+          % endif
+          % elif not user_annual_none and user_annual_employment and user_benefits.all_false():
+          ${ thousands(user_annual_employment_amount, show_decimals=True) }
+          % endif 
+
+      - "user_annual_ss": |
+          % if user_is_incarcerated:
+          % if not user_annual_none:
+          ${ user_annual_ss }
+          % endif
+          % elif not user_annual_none and user_benefits.all_false():
+          ${ user_annual_ss }
+          % endif
+      - "user_annual_ss_amount": |
+          % if user_is_incarcerated:
+          % if not user_annual_none and user_annual_ss:
+          ${ thousands(user_annual_ss_amount, show_decimals=True) }
+          % endif
+          % elif not user_annual_none and user_annual_ss and user_benefits.all_false():
+          ${ thousands(user_annual_ss_amount, show_decimals=True) }
+          % endif
+
+      - "user_annual_child_support": |
+          % if user_is_incarcerated:
+          % if not user_annual_none:
+          ${ user_annual_child_support }
+          % endif
+          % elif not user_annual_none and user_benefits.all_false():
+          ${ user_annual_child_support }
+          % endif
+      - "user_annual_child_support_amount": |
+          % if user_is_incarcerated:
+          % if not user_annual_none and user_annual_child_support:
+          ${ thousands(user_annual_child_support_amount, show_decimals=True) }
+          % endif
+          % elif not user_annual_none and user_annual_child_support and user_benefits.all_false():
+          ${ thousands(user_annual_child_support_amount, show_decimals=True) }
+          % endif
+
+      - "user_annual_unemployment": |
+          % if user_is_incarcerated:
+          % if not user_annual_none:
+          ${ user_annual_unemployment }
+          % endif
+          % elif not user_annual_none and user_benefits.all_false():
+          ${ user_annual_unemployment }
+          % endif
+      - "user_annual_unemployment_amount": |
+          % if user_is_incarcerated:
+          % if not user_annual_none and user_annual_unemployment:
+          ${ thousands(user_annual_unemployment_amount, show_decimals=True) }
+          % endif
+          % elif not user_annual_none and user_annual_unemployment and user_benefits.all_false():
+          ${ thousands(user_annual_unemployment_amount, show_decimals=True) }
+          % endif
+
+      - "user_annual_pension": |
+          % if user_is_incarcerated:
+          % if not user_annual_none:
+          ${ user_annual_pension }
+          % endif
+          % elif not user_annual_none and user_benefits.all_false():
+          ${ user_annual_pension }
+          % endif
+      - "user_annual_pension_amount": |
+          % if user_is_incarcerated:
+          % if not user_annual_none and user_annual_pension:
+          ${ thousands(user_annual_pension_amount, show_decimals=True) }
+          % endif
+          % elif not user_annual_none and user_annual_pension and user_benefits.all_false():
+          ${ thousands(user_annual_pension_amount, show_decimals=True) }
+          % endif
+
+      - "user_annual_household": |
+          % if user_is_incarcerated:
+          % if not user_annual_none:
+          ${ user_annual_household }
+          % endif
+          % elif not user_annual_none and user_benefits.all_false():
+          ${ user_annual_household }
+          % endif
+      - "user_annual_household_amount": |
+          % if user_is_incarcerated:
+          % if not user_annual_none and user_annual_household:
+          ${ thousands(user_annual_household_amount, show_decimals=True) }
+          % endif
+          % elif not user_annual_none and user_annual_household and user_benefits.all_false():
+          ${ thousands(user_annual_household_amount, show_decimals=True) }
+          % endif
+
+      - "user_annual_other": |
+          % if user_is_incarcerated:
+          % if not user_annual_none:
+          ${ user_annual_other }
+          % endif
+          % elif not user_annual_none and user_benefits.all_false():
+          ${ user_annual_other }
+          % endif
+      - "user_annual_other_amount_1":  |
+          % if user_is_incarcerated:
+          % if not user_annual_none and user_annual_other:
+          ${ thousands(user_annual_other_list[0].amount, show_decimals=True) }
+          % endif
+          % elif not user_annual_none and user_annual_other and user_benefits.all_false():
+          ${ thousands(user_annual_other_list[0].amount, show_decimals=True) }
+          % endif
+      - "user_annual_other_kind_1":  |
+          % if user_is_incarcerated:
+          % if not user_annual_none and user_annual_other:
+          ${ user_annual_other_list[0].name.text }
+          % endif
+          % elif not user_annual_none and user_annual_other and user_benefits.all_false():
+          ${ user_annual_other_list[0].name.text }
+          % endif
+      - "user_annual_other_amount_2":  |
+          % if user_is_incarcerated:
+          % if not user_annual_none and user_annual_other and user_annual_other_list.number() > 1:
+          ${ thousands(user_annual_other_list[1].amount, show_decimals=True) }
+          % endif
+          % elif not user_annual_none and user_annual_other and user_annual_other_list.number() > 1 and user_benefits.all_false():
+          ${ thousands(user_annual_other_list[1].amount, show_decimals=True) }
+          % endif
+      - "user_annual_other_kind_2":  |
+          % if user_is_incarcerated:
+          % if not user_annual_none and user_annual_other and user_annual_other_list.number() > 1:
+          ${ user_annual_other_list[1].name.text }
+          % endif
+          % elif not user_annual_none and user_annual_other and user_annual_other_list.number() > 1 and user_benefits.all_false():
+          ${ user_annual_other_list[1].name.text }
+          % endif
+
+      - "user_annual_none":  |
+          % if user_is_incarcerated:
+          ${ user_annual_none }
+          % elif user_benefits.all_false():
+          ${ user_annual_none }
+          % endif
+      - "user_annual_total": |
+          % if user_is_incarcerated:
+          % if not user_annual_none:
+          ${ thousands(user_annual_total, show_decimals=True) }
+          % endif
+          % elif not user_annual_none and user_benefits.all_false():
+          ${ thousands(user_annual_total, show_decimals=True) }
+          % endif
+
+      - "user_expense_rent": |
+          % if user_is_incarcerated:
+          % if not user_expense_none:
+          ${ user_expense_rent }
+          % endif
+          % elif not user_expense_none and user_benefits.all_false():
+          ${ user_expense_rent }
+          % endif
+      - "user_expense_rent_amount": |
+          % if user_is_incarcerated:
+          % if not user_expense_none and user_expense_rent:
+          ${ thousands(user_expense_rent_amount, show_decimals=True) }
+          % endif
+          % elif not user_expense_none and user_expense_rent and user_benefits.all_false():
+          ${ thousands(user_expense_rent_amount, show_decimals=True) }
+          % endif
+
+      - "user_expense_mortgage": |
+          % if user_is_incarcerated:
+          % if not user_expense_none:
+          ${ user_expense_mortgage }
+          % endif
+          % elif not user_expense_none and user_benefits.all_false():
+          ${ user_expense_mortgage }
+          % endif
+      - "user_expense_mortgage_amount": |
+          % if user_is_incarcerated:
+          % if not user_expense_none and user_expense_mortgage:
+          ${ thousands(user_expense_mortgage_amount, show_decimals=True) }
+          % endif
+          % elif not user_expense_none and user_expense_mortgage and user_benefits.all_false():
+          ${ thousands(user_expense_mortgage_amount, show_decimals=True) }
+          % endif
+
+      - "user_expense_other_mortgage": |
+          % if user_is_incarcerated:
+          % if not user_expense_none:
+          ${ user_expense_other_mortgage }
+          % endif
+          % elif not user_expense_none and user_benefits.all_false():
+          ${ user_expense_other_mortgage }
+          % endif
+      - "user_expense_other_mortgage_amount": |
+          % if user_is_incarcerated:
+          % if not user_expense_none and user_expense_other_mortgage:
+          ${ thousands(user_expense_other_mortgage_amount, show_decimals=True) }
+          % endif
+          % elif not user_expense_none and user_expense_other_mortgage and user_benefits.all_false():
+          ${ thousands(user_expense_other_mortgage_amount, show_decimals=True) }
+          % endif
+
+      - "user_expense_utilities": |
+          % if user_is_incarcerated:
+          % if not user_expense_none:
+          ${ user_expense_utilities }
+          % endif
+          % elif not user_expense_none and user_benefits.all_false():
+          ${ user_expense_utilities }
+          % endif
+      - "user_expense_utilities_amount": |
+          % if user_is_incarcerated:
+          % if not user_expense_none and user_expense_utilities:
+          ${ thousands(user_expense_utilities_amount, show_decimals=True) }
+          % endif
+          % elif not user_expense_none and user_expense_utilities and user_benefits.all_false():
+          ${ thousands(user_expense_utilities_amount, show_decimals=True) }
+          % endif
+
+      - "user_expense_food": |
+          % if user_is_incarcerated:
+          % if not user_expense_none:
+          ${ user_expense_food }
+          % endif
+          % elif not user_expense_none and user_benefits.all_false():
+          ${ user_expense_food }
+          % endif
+      - "user_expense_food_amount": |
+          % if user_is_incarcerated:
+          % if not user_expense_none and user_expense_food:
+          ${ thousands(user_expense_food_amount, show_decimals=True) }
+          % endif
+          % elif not user_expense_none and user_expense_food and user_benefits.all_false():
+          ${ thousands(user_expense_food_amount, show_decimals=True) }
+          % endif
+
+      - "user_expense_medical": |
+          % if user_is_incarcerated:
+          % if not user_expense_none:
+          ${ user_expense_medical }
+          % endif
+          % elif not user_expense_none and user_benefits.all_false():
+          ${ user_expense_medical }
+          % endif
+      - "user_expense_medical_amount": |
+          % if user_is_incarcerated:
+          % if not user_expense_none and user_expense_medical:
+          ${ thousands(user_expense_medical_amount, show_decimals=True) }
+          % endif
+          % elif not user_expense_none and user_expense_medical and user_benefits.all_false():
+          ${ thousands(user_expense_medical_amount, show_decimals=True) }
+          % endif
+
+      - "user_expense_car": |
+          % if user_is_incarcerated:
+          % if not user_expense_none:
+          ${ user_expense_car }
+          % endif
+          % elif not user_expense_none and user_benefits.all_false():
+          ${ user_expense_car }
+          % endif
+      - "user_expense_car_amount": |
+          % if user_is_incarcerated:
+          % if not user_expense_none and user_expense_car:
+          ${ thousands(user_expense_car_amount, show_decimals=True) }
+          % endif
+          % elif not user_expense_none and user_expense_car and user_benefits.all_false():
+          ${ thousands(user_expense_car_amount, show_decimals=True) }
+          % endif
+
+      - "user_expense_childcare": |
+          % if user_is_incarcerated:
+          % if not user_expense_none:
+          ${ user_expense_childcare }
+          % endif
+          % elif not user_expense_none and user_benefits.all_false():
+          ${ user_expense_childcare }
+          % endif
+      - "user_expense_childcare_amount": |
+          % if user_is_incarcerated:
+          % if not user_expense_none and user_expense_childcare:
+          ${ thousands(user_expense_childcare_amount, show_decimals=True) }
+          % endif
+          % elif not user_expense_none and user_expense_childcare and user_benefits.all_false():
+          ${ thousands(user_expense_childcare_amount, show_decimals=True) }
+          % endif
+
+      - "user_expense_child_support": |
+          % if user_is_incarcerated:
+          % if not user_expense_none:
+          ${ user_expense_child_support }
+          % endif
+          % elif not user_expense_none and user_benefits.all_false():
+          ${ user_expense_child_support }
+          % endif
+      - "user_expense_child_support_amount": |
+          % if user_is_incarcerated:
+          % if not user_expense_none and user_expense_child_support:
+          ${ thousands(user_expense_child_support_amount, show_decimals=True) }
+          % endif
+          % elif not user_expense_none and user_expense_child_support and user_benefits.all_false():
+          ${ thousands(user_expense_child_support_amount, show_decimals=True) }
+          % endif
+
+      - "user_expense_other": |
+          % if user_is_incarcerated:
+          % if not user_expense_none:
+          ${ user_expense_other }
+          % endif
+          % elif not user_expense_none and user_benefits.all_false():
+          ${ user_expense_other }
+          % endif
+      - "user_expense_other_amount_1":  |
+          % if user_is_incarcerated:
+          % if not user_expense_none and user_expense_other:
+          ${ thousands(user_expense_other_list[0].amount, show_decimals=True) }
+          % endif
+          % elif not user_expense_none and user_expense_other and user_benefits.all_false():
+          ${ thousands(user_expense_other_list[0].amount, show_decimals=True) }
+          % endif
+      - "user_expense_other_kind_1":  |
+          % if user_is_incarcerated:
+          % if not user_expense_none and user_expense_other:
+          ${ user_expense_other_list[0].name.text }
+          % endif
+          % elif not user_expense_none and user_expense_other and user_benefits.all_false():
+          ${ user_expense_other_list[0].name.text }
+          % endif
+      - "user_expense_other_amount_2":  |
+          % if user_is_incarcerated:
+          % if not user_expense_none and user_expense_other and user_expense_other_list.number() > 1:
+          ${ thousands(user_expense_other_list[1].amount, show_decimals=True) }
+          % endif
+          % elif not user_expense_none and user_expense_other and user_expense_other_list.number() > 1 and user_benefits.all_false():
+          ${ thousands(user_expense_other_list[1].amount, show_decimals=True) }
+          % endif
+      - "user_expense_other_kind_2":  |
+          % if user_is_incarcerated:
+          % if not user_expense_none and user_expense_other and user_expense_other_list.number() > 1:
+          ${ user_expense_other_list[1].name.text }
+          % endif
+          % elif not user_expense_none and user_expense_other and user_expense_other_list.number() > 1 and user_benefits.all_false():
+          ${ user_expense_other_list[1].name.text }
+          % endif
+
+      - "user_expense_none":  |
+          % if user_is_incarcerated:
+          ${ user_expense_none }
+          % elif user_benefits.all_false():
+          ${ user_expense_none }
+          % endif
+      - "user_expense_total": |
+          % if user_is_incarcerated:
+          % if not user_expense_none:
+          ${ thousands(user_expense_total, show_decimals=True) }
+          % endif
+          % elif not user_expense_none and user_benefits.all_false():
+          ${ thousands(user_expense_total, show_decimals=True) }
+          % endif
+          
+
+      - "user_asset_bank_account": |
+          % if user_is_incarcerated:
+          % if not user_asset_none:
+          ${ user_asset_bank_account }
+          % endif
+          % elif not user_asset_none and user_benefits.all_false():
+          ${ user_asset_bank_account }
+          % endif
+      - "user_asset_bank_account_amount": |
+          % if user_is_incarcerated:
+          % if not user_asset_none and user_asset_bank_account:
+          ${ thousands(user_asset_bank_account_amount, show_decimals=True) }
+          % endif
+          % elif not user_asset_none and user_asset_bank_account and user_benefits.all_false():
+          ${ thousands(user_asset_bank_account_amount, show_decimals=True) }
+          % endif
+
+      - "user_asset_home": |
+          % if user_is_incarcerated:
+          % if not user_asset_none:
+          ${ user_asset_home }
+          % endif
+          % elif not user_asset_none and user_benefits.all_false():
+          ${ user_asset_home }
+          % endif
+      - "user_asset_home_amount": |
+          % if user_is_incarcerated:
+          % if not user_asset_none and user_asset_home:
+          ${ thousands(user_asset_home_amount, show_decimals=True) }
+          % endif
+          % elif not user_asset_none and user_asset_home and user_benefits.all_false():
+          ${ thousands(user_asset_home_amount, show_decimals=True) }
+          % endif
+      - "user_asset_home_amount_owed": |
+          % if user_is_incarcerated:
+          % if not user_asset_none and user_asset_home:
+          ${ thousands(user_asset_home_amount_owed, show_decimals=True) }
+          % endif
+          % elif not user_asset_none and user_asset_home and user_benefits.all_false():
+          ${ thousands(user_asset_home_amount_owed, show_decimals=True) }
+          % endif
+
+      - "user_asset_other_real_estate": |
+          % if user_is_incarcerated:
+          % if not user_asset_none:
+          ${ user_asset_other_real_estate }
+          % endif
+          % elif not user_asset_none and user_benefits.all_false():
+          ${ user_asset_other_real_estate }
+          % endif
+      - "user_asset_other_real_estate_amount": |
+          % if user_is_incarcerated:
+          % if not user_asset_none and user_asset_other_real_estate:
+          ${ thousands(user_asset_other_real_estate_amount, show_decimals=True) }
+          % endif
+          % elif not user_asset_none and user_asset_other_real_estate and user_benefits.all_false():
+          ${ thousands(user_asset_other_real_estate_amount, show_decimals=True) }
+          % endif
+
+      - "user_asset_vehicle1": |
+          % if user_is_incarcerated:
+          % if not user_asset_none:
+          ${ user_asset_vehicle1 }
+          % endif
+          % elif not user_asset_none and user_benefits.all_false():
+          ${ user_asset_vehicle1 }
+          % endif
+      - "user_asset_vehicle1_paid_yes": |
+          % if user_is_incarcerated:
+          % if not user_asset_none and user_asset_vehicle1:
+          ${ user_asset_vehicle1_paid }
+          % endif
+          % elif not user_asset_none and user_asset_vehicle1 and user_benefits.all_false():
+          ${ user_asset_vehicle1_paid }
+          % endif
+      - "user_asset_vehicle1_paid_no": |
+          % if user_is_incarcerated:
+          % if not user_asset_none and user_asset_vehicle1:
+          ${ not user_asset_vehicle1_paid }
+          % endif
+          % elif not user_asset_none and user_asset_vehicle1 and user_benefits.all_false():
+          ${ not user_asset_vehicle1_paid }
+          % endif
+      - "user_asset_vehicle1_amount": |
+          % if user_is_incarcerated:
+          % if not user_asset_none and user_asset_vehicle1:
+          ${ thousands(user_asset_vehicle1_amount, show_decimals=True) }
+          % endif
+          % elif not user_asset_none and user_asset_vehicle1 and user_benefits.all_false():
+          ${ thousands(user_asset_vehicle1_amount, show_decimals=True) }
+          % endif
+
+      - "user_asset_vehicle2_paid_yes": |
+          % if user_is_incarcerated:
+          % if not user_asset_none and user_asset_vehicle1 and user_asset_vehicle2:
+          ${ user_asset_vehicle2_paid if user_asset_vehicle2 else '' }
+          % endif
+          % elif not user_asset_none and user_asset_vehicle1 and user_asset_vehicle2 and user_benefits.all_false():
+          ${ user_asset_vehicle2_paid if user_asset_vehicle2 else '' }
+          % endif
+      - "user_asset_vehicle2_paid_no": |
+          % if user_is_incarcerated:
+          % if not user_asset_none and user_asset_vehicle1 and user_asset_vehicle2:
+          ${ not user_asset_vehicle2_paid if user_asset_vehicle2 else '' }
+          % endif
+          % elif not user_asset_none and user_asset_vehicle1 and user_asset_vehicle2 and user_benefits.all_false():
+          ${ not user_asset_vehicle2_paid if user_asset_vehicle2 else '' }
+          % endif
+      - "user_asset_vehicle2": |
+          % if user_is_incarcerated:
+          % if not user_asset_none and user_asset_vehicle1:
+          ${ user_asset_vehicle2 }
+          % endif
+          % elif not user_asset_none and user_asset_vehicle1 and user_benefits.all_false():
+          ${ user_asset_vehicle2 }
+          % endif
+      - "user_asset_vehicle2_amount": |
+          % if user_is_incarcerated:
+          % if not user_asset_none and user_asset_vehicle1 and user_asset_vehicle2:
+          ${ thousands(user_asset_vehicle2_amount, show_decimals=True) if user_asset_vehicle2 else '' }
+          % endif
+          % elif not user_asset_none and user_asset_vehicle1 and user_asset_vehicle2 and user_benefits.all_false():
+          ${ thousands(user_asset_vehicle2_amount, show_decimals=True) if user_asset_vehicle2 else '' }
+          % endif
+
+      - "user_asset_other": |
+          % if user_is_incarcerated:
+          % if not user_asset_none:
+          ${ user_asset_other }
+          % endif
+          % elif not user_asset_none and user_benefits.all_false():
+          ${ user_asset_other }
+          % endif
+      - "user_asset_other_amount_1":  |
+          % if user_is_incarcerated:
+          % if not user_asset_none and user_asset_other:
+          ${ thousands(user_asset_other_list[0].amount, show_decimals=True) }
+          % endif
+          % elif not user_asset_none and user_asset_other and user_benefits.all_false():
+          ${ thousands(user_asset_other_list[0].amount, show_decimals=True) }
+          % endif
+      - "user_asset_other_kind_1":  |
+          % if user_is_incarcerated:
+          % if not user_asset_none and user_asset_other:
+          ${ user_asset_other_list[0].name.text }
+          % endif
+          % elif not user_asset_none and user_asset_other and user_benefits.all_false():
+          ${ user_asset_other_list[0].name.text }
+          % endif
+      - "user_asset_other_amount_2":  |
+          % if user_is_incarcerated:
+          % if not user_asset_none and user_asset_other and user_asset_other_list.number() > 1:
+          ${ thousands(user_asset_other_list[1].amount, show_decimals=True) }
+          % endif
+          % elif not user_asset_none and user_asset_other and user_asset_other_list.number() > 1 and user_benefits.all_false():
+          ${ thousands(user_asset_other_list[1].amount, show_decimals=True) }
+          % endif
+      - "user_asset_other_kind_2":  |
+          % if user_is_incarcerated:
+          % if not user_asset_none and user_asset_other and user_asset_other_list.number() > 1:
+          ${ user_asset_other_list[1].name.text }
+          % endif
+          % elif not user_asset_none and user_asset_other and user_asset_other_list.number() > 1 and user_benefits.all_false():
+          ${ user_asset_other_list[1].name.text }
+          % endif
+
+      - "user_asset_none":  |
+          % if user_is_incarcerated:
+          ${ user_asset_none }
+          % elif user_benefits.all_false():
+          ${ user_asset_none }
+          % endif   
+      - "substantial_hardship_explanation": ${ substantial_hardship_explanation.replace("\n", " ").replace("\r", " ") }
+      - "form_for_self": ${ True }
+---
+id: review screen
+event: review_answers
+question: |
+  Review screen
+subquestion: |
+  Edit your answers below.
+review:
+  - note: |
+      <h4>Income</h4>
+  - Edit: user_is_incarcerated
+    button: |
+      **Are you currently incarcerated?**
+      % if user_is_incarcerated:
+      Yes. Inmate ID: ${ inmate_id }, Trust account balance: $${ thousands(trust_account_balance, show_decimals=True) }
+      % else:
+      No
+      % endif
+  - Edit: user_has_dependents
+    button: |
+      **Supporting any dependents in same household?**
+      ${ word(yesno(user_has_dependents)) }
+    show if: user_is_incarcerated == False
+  - Edit: user_dependents_adults
+    button: |
+      **Number of adult dependents**:
+      ${ user_dependents_adults }
+    show if: user_has_dependents and user_is_incarcerated == False
+  - Edit: user_dependents_children
+    button: |
+      **Number of minor dependents**:
+      ${ user_dependents_children }
+    show if: user_has_dependents and user_is_incarcerated == False
+  - Edit: user_benefits
+    button: |
+      **Receives public benefits?**
+      ${ word(yesno(user_benefits.any_true())) }
+    show if: user_is_incarcerated == False
+  - Edit: user_applied_for_benefits
+    button: |
+      **Applied for public benefits?**
+      ${ word(yesno(user_applied_for_benefits)) }
+  - Edit: user_income_none
+    button: |
+      **Any income (last month)?**
+      ${ word(yesno(not user_income_none)) }
+  - Edit: user_income_employment
+    button: |
+      **Income from work (last month)?**
+      ${ word(yesno(user_income_employment)) }
+    show if: not user_income_none
+  - Edit: user_income_employment_amount
+    button: |
+      **Income from work amount (last month)**:
+      ${ currency(user_income_employment_amount) }
+    show if: user_income_employment and not user_income_none
+  - Edit: user_income_ss
+    button: |
+      **Social Security income (last month)?**
+      ${ word(yesno(user_income_ss)) }
+    show if: not user_income_none
+  - Edit: user_income_ss_amount
+    button: |
+      **Social Security income amount (last month)**:
+      ${ currency(user_income_ss_amount) }
+    show if: user_income_ss and not user_income_none
+  - Edit: user_income_child_support
+    button: |
+      **Child support income (last month)?**
+      ${ word(yesno(user_income_child_support)) }
+    show if: not user_income_none
+  - Edit: user_income_child_support_amount
+    button: |
+      **Child support amount (last month)**:
+      ${ currency(user_income_child_support_amount) }
+    show if: user_income_child_support and not user_income_none
+  - Edit: user_income_unemployment
+    button: |
+      **Unemployment benefits (last month)?**
+      ${ word(yesno(user_income_unemployment)) }
+    show if: not user_income_none
+  - Edit: user_income_unemployment_amount
+    button: |
+      **Unemployment benefits amount (last month)**:
+      ${ currency(user_income_unemployment_amount) }
+    show if: user_income_unemployment and not user_income_none
+  - Edit: user_income_pension
+    button: |
+      **Pension (last month)?**
+      ${ word(yesno(user_income_pension)) }
+    show if: not user_income_none
+  - Edit: user_income_pension_amount
+    button: |
+      **Pension amount (last month)**:
+      ${ currency(user_income_pension_amount) }
+    show if: user_income_pension and not user_income_none
+  - Edit: user_income_household
+    button: |
+      **Income from household members (last month)?**
+      ${ word(yesno(user_income_household)) }
+    show if: not user_income_none
+  - Edit: user_income_household_amount
+    button: |
+      **Household member income amount (last month)**:
+      ${ currency(user_income_household_amount) }
+    show if: user_income_household and not user_income_none
+  - Edit: user_income_other
+    button: |
+      **Other income (last month)?**
+      ${ word(yesno(user_income_other)) }
+    show if: not user_income_none
+  - Edit: user_income_other_list.revisit
+    button: |
+      **Other income from last month (Edit to change details):**
+
+      % for my_var in user_income_other_list:
+      * $${thousands(my_var.amount, show_decimals=True)} from ${my_var.name.text}
+      % endfor
+    show if: user_income_other and not user_income_none
+  - Edit: 
+      - user_income_none
+      - recompute:
+        - user_income_total
+    button: |
+      **Total income (last month)**:
+      ${ currency(user_income_total) }
+    show if: not user_income_none
+  - Edit: user_annual_none
+    button: |
+      **Any income (last 12 months)?**
+      ${ word(yesno( not user_annual_none)) }
+  - Edit: user_annual_employment
+    button: |
+      **Income from work (last 12 months)?**
+      ${ word(yesno(user_annual_employment)) }
+    show if: not user_annual_none
+  - Edit: user_annual_employment_amount
+    button: |
+      **Income from work amount (last 12 months)**:
+      ${ currency(user_annual_employment_amount) }
+    show if: not user_annual_none and user_annual_employment
+  - Edit: user_annual_ss
+    button: |
+      **Social Security (last 12 months)?**
+      ${ word(yesno(user_annual_ss)) }
+    show if: not user_annual_none
+  - Edit: user_annual_ss_amount
+    button: |
+      **Social Security income amount (last 12 months)**:
+      ${ currency(user_annual_ss_amount) }
+    show if: user_annual_ss and not user_annual_none
+  - Edit: user_annual_child_support
+    button: |
+      **Child support (last 12 months)?**
+      ${ word(yesno(user_annual_child_support)) }
+    show if: not user_annual_none
+  - Edit: user_annual_child_support_amount
+    button: |
+      **Child support amount (last 12 months)**:
+      ${ currency(user_annual_child_support_amount) }
+    show if: user_annual_child_support and not user_annual_none
+  - Edit: user_annual_unemployment
+    button: |
+      **Unemployment benefits (last 12 months)?**
+      ${ word(yesno(user_annual_unemployment)) }
+    show if: not user_annual_none
+  - Edit: user_annual_unemployment_amount
+    button: |
+      **Unemployment benefits amount (last 12 months)**:
+      ${ currency(user_annual_unemployment_amount) }
+    show if: user_annual_unemployment and not user_annual_none
+  - Edit: user_annual_pension
+    button: |
+      **Pension (last 12 months)?**
+      ${ word(yesno(user_annual_pension)) }
+    show if: not user_annual_none
+  - Edit: user_annual_pension_amount
+    button: |
+      **Pension amount (last 12 months)**:
+      ${ currency(user_annual_pension_amount) }
+    show if: user_annual_pension and not user_annual_none
+  - Edit: user_annual_household
+    button: |
+      **Household income (last 12 months)?**
+      ${ word(yesno(user_annual_household)) }
+    show if: not user_annual_none
+  - Edit: user_annual_household_amount
+    button: |
+      **Household income amount (last 12 months)**:
+      ${ currency(user_annual_household_amount) }
+    show if: user_annual_household and not user_annual_none
+  - Edit: user_annual_other
+    button: |
+      **Other income (last 12 months)?**
+      ${ word(yesno(user_annual_other)) }
+    show if: not user_annual_none
+  - Edit: user_annual_other_list.revisit
+    button: |
+      **Other income from last year (Edit to change details):**
+
+      % for my_var in user_annual_other_list:
+      * $${thousands(my_var.amount, show_decimals=True)} from ${my_var.name.text}
+      % endfor
+    show if: user_annual_other and not user_annual_none
+  - Edit: 
+      - user_annual_none
+      - recompute:
+        - user_annual_total
+    button: |
+      **Total income (last 12 months)**:
+      ${ currency(user_annual_total) }
+    show if: not user_annual_none
+
+  - note: |
+      <h4>Expenses</h4>
+  - Edit: user_expense_none
+    button: |
+      **Do you have any expenses?**:
+      ${ word(yesno(not user_expense_none)) }
+  - Edit: user_expense_rent
+    button: |
+      **Rent?**
+      ${ word(yesno(user_expense_rent)) }
+    show if: not user_expense_none
+  - Edit: user_expense_rent_amount
+    button: |
+      **Rent amount**:
+      ${ currency(user_expense_rent_amount) }
+    show if: not user_expense_none and user_expense_rent
+  - Edit: user_expense_mortgage
+    button: |
+      **Mortgage for home?**
+      ${ word(yesno(user_expense_mortgage)) }
+    show if: not user_expense_none
+  - Edit: user_expense_mortgage_amount
+    button: |
+      **Home mortgage amount**:
+      ${ currency(user_expense_mortgage_amount) }
+    show if: user_expense_mortgage and not user_expense_none
+  - Edit: user_expense_other_mortgage
+    button: |
+      **Other mortgage?**
+      ${ word(yesno(user_expense_other_mortgage)) }
+    show if: not user_expense_none
+  - Edit: user_expense_other_mortgage_amount
+    button: |
+      **Other mortgage amount**:
+      ${ currency(user_expense_other_mortgage_amount) }
+    show if: user_expense_other_mortgage and not user_expense_none
+  - Edit: user_expense_utilities
+    button: |
+      **Utilities?**
+      ${ word(yesno(user_expense_utilities)) }
+    show if: not user_expense_none
+  - Edit: user_expense_utilities_amount
+    button: |
+      **Utilities amount**:
+      ${ currency(user_expense_utilities_amount) }
+    show if: user_expense_utilities and not user_expense_none
+  - Edit: user_expense_food
+    button: |
+      **Food?**
+      ${ word(yesno(user_expense_food)) }
+    show if: not user_expense_none
+  - Edit: user_expense_food_amount
+    button: |
+      **Food amount**:
+      ${ currency(user_expense_food_amount) }
+    show if: user_expense_food and not user_expense_none
+  - Edit: user_expense_medical
+    button: |
+      **Medical expenses?**
+      ${ word(yesno(user_expense_medical)) }
+    show if: not user_expense_none
+  - Edit: user_expense_medical_amount
+    button: |
+      **Medical expenses amount**:
+      ${ currency(user_expense_medical_amount) }
+    show if: user_expense_medical and not user_expense_none
+  - Edit: user_expense_car
+    button: |
+      **Vehicle, including any loans?**
+      ${ word(yesno(user_expense_car)) }
+    show if: not user_expense_none
+  - Edit: user_expense_car_amount
+    button: |
+      **Vehicle loan amount**:
+      ${ currency(user_expense_car_amount) }
+    show if: user_expense_car and not user_expense_none
+  - Edit: user_expense_childcare
+    button: |
+      **Childcare?**
+      ${ word(yesno(user_expense_childcare)) }
+    show if: not user_expense_none
+  - Edit: user_expense_childcare_amount
+    button: |
+      **Childcare amount**:
+      ${ currency(user_expense_childcare_amount) }
+    show if: user_expense_childcare and not user_expense_none
+  - Edit: user_expense_child_support
+    button: |
+      **Child support?**
+      ${ word(yesno(user_expense_child_support)) }
+    show if: not user_expense_none
+  - Edit: user_expense_child_support_amount
+    button: |
+      **Child support amount**:
+      ${ currency(user_expense_child_support_amount) }
+    show if: user_expense_child_support and not user_expense_none
+  - Edit: user_expense_other
+    button: |
+      **Other expenses?**
+      ${ word(yesno(user_expense_other)) }
+    show if: not user_expense_none
+  - Edit: user_expense_other_list.revisit
+    button: |
+      **Other monthly expenses (Edit to change details):**
+
+      % for my_var in user_expense_other_list:
+      * $${thousands(my_var.amount, show_decimals=True)} for ${my_var.name.text}
+      % endfor
+    show if: user_expense_other and not user_expense_none
+  - Edit: 
+      - user_expense_none
+      - recompute:
+        - user_expense_total
+    button: |
+      **Total expenses**:
+      ${ currency(user_expense_total) }
+    show if: not user_expense_none
+
+  - note: |
+      <h4>Assets</h4>
+  - Edit: user_asset_none
+    button: |
+      **Do you have any assets?**
+      ${ word(yesno(not user_asset_none)) }
+  - Edit: user_asset_bank_account
+    button: |
+      **Bank account or cash?**
+      ${ word(yesno(user_asset_bank_account)) }
+    show if: not user_asset_none
+  - Edit: user_asset_bank_account_amount
+    button: |
+      **Bank account or cash amount**:
+      ${ currency(user_asset_bank_account_amount) }
+    show if: user_asset_bank_account and not user_asset_none
+  - Edit: user_asset_home
+    button: |
+      **Home?**
+      ${ word(yesno(user_asset_home)) }
+    show if: not user_asset_none
+  - Edit: user_asset_home_amount
+    button: |
+      **Home value**:
+      ${ currency(user_asset_home_amount) }
+    show if: user_asset_home and not user_asset_none
+  - Edit: user_asset_home_amount_owed
+    button: |
+      **Amount owed on mortgage**:
+      ${ currency(user_asset_home_amount_owed) }
+    show if: user_asset_home and not user_asset_none
+  - Edit: user_asset_other_real_estate
+    button: |
+      **Other real estate?**
+      ${ word(yesno(user_asset_other_real_estate)) }
+    show if: not user_asset_none
+  - Edit: user_asset_other_real_estate_amount
+    button: |
+      **Other real estate value**:
+      ${ currency(user_asset_other_real_estate_amount) }
+    show if: user_asset_other_real_estate and not user_asset_none
+  - Edit: user_asset_vehicle1
+    button: |
+      **Vehicle?**
+      ${ word(yesno(user_asset_vehicle1)) }
+    show if: not user_asset_none
+  - Edit: user_asset_vehicle1_amount
+    button: |
+      **Vehicle value**:
+      ${ currency(user_asset_vehicle1_amount) }
+    show if: user_asset_vehicle1 and not user_asset_none
+  - Edit: user_asset_vehicle1_paid
+    button: |
+      **Vehicle is paid in full?**
+      ${ word(yesno(user_asset_vehicle1_paid)) }
+    show if: user_asset_vehicle1 and not user_asset_none
+  - Edit: user_asset_vehicle2
+    button: |
+      **Second vehicle?**
+      ${ word(yesno(user_asset_vehicle2)) }
+    show if: user_asset_vehicle1 and not user_asset_none
+  - Edit: user_asset_vehicle2_amount
+    button: |
+      **Second vehicle value**:
+      ${ currency(user_asset_vehicle2_amount) }
+    show if: user_asset_vehicle1 and user_asset_vehicle2 and not user_asset_none
+  - Edit: user_asset_vehicle2_paid
+    button: |
+      **Second vehicle is paid in full?**
+      ${ word(yesno(user_asset_vehicle2_paid)) }
+    show if: user_asset_vehicle1 and user_asset_vehicle2 and not user_asset_none
+  - Edit: user_asset_other
+    button: |
+      **Other assets?**
+      ${ word(yesno(user_asset_other)) }
+    show if: not user_asset_none
+  - Edit: user_asset_other_list.revisit
+    button: |
+      **Other monthly assets (Edit to change details):**
+
+      % for my_var in user_asset_other_list:
+      * ${my_var.name.text} worth $${thousands(my_var.amount, show_decimals=True)} 
+      % endfor
+    show if: user_asset_other and not user_asset_none
+      
+  - note: |
+      <h4>Court case info</h4>      
+  - Edit: plaintiffs.revisit
+    button: |
+      **Plaintiffs / Petitioners:**
+
+      % for item in plaintiffs:
+        * ${ item.name_full() }
+      % endfor
+  - Edit: defendants.revisit
+    button: |
+      **Defendants / Respondents:**
+
+      % if not other_parties.there_are_any:
+      * None entered
+      % else:
+      % for item in defendants:
+        * ${ item.name_full() }
+      % endfor
+      % endif
+  - Edit: in_re_check
+    button: |
+      **Does the court case have "In re:" in the name?**  
+      ${word(yesno(in_re_check))}
+  - Edit: in_re_label
+    button: |
+      **In re:** ${in_re_label}
+    show if: in_re_check
+  - Edit: docket_number
+    button: |
+      **Circuit court case number**:
+      ${ docket_number }
+  - Edit: 
+      - trial_court_index
+      - recompute:
+        - trial_court
+    button: |
+      **County where the circuit court case was filed:**
+      ${ trial_court.address.county }
+  - Edit: judge.name.last
+    button: |
+      **Circuit court judge:** ${ judge.name_full()}
+
+  - Edit: minor_involvement
+    button: |
+      **Case involves a minor child?**
+      ${word(yesno(minor_involvement))}
+  - Edit: juvenile_act_involvement
+    button: |
+      **Case involves a juvenile delinquency proceeding?**
+      ${word(yesno(juvenile_act_involvement))}
+  - Edit: user_is_appellant
+    button: |
+      **Are you or someone on your side of the case filing the appeal?**
+      ${word(yesno(user_is_appellant))}
+  - Edit: appellate_district
+    button: |
+      **In which Appellate district was the case filed?**
+      ${appellate_district}
+  - Edit: appellate_case_number
+    button: |
+      **Appellate court case number**:
+      % if dont_know_docket_number:
+      I don't know.
+      % else:
+      ${ appellate_case_number }
+      % endif
+
+  - note: |
+      <h4>About you</h4>      
+  - Edit: substantial_hardship_explanation
+    button: |
+      **Substantial hardship because**:
+      ${ substantial_hardship_explanation.replace("\n", " ").replace("\r", " ") }
+  - Edit: users[0].name.first
+    button: |
+      **Your name:**
+      ${ users[0].name_full() }
+  - Edit: users[0].address.address
+    button: |
+      % if filing_basis != "filing_self":
+      **${ users[0].familiar() }'s address:**
+      % else:
+      **Your address:**
+      % endif
+      ${ users[0].address.on_one_line(bare=True) }
+      
+  - Edit: users[0].has_email_address
+    button: |
+      **Your phone number**:
+      ${ phone_number_formatted(users[0].phone_number) }      
+  - Edit: users[0].has_email_address
+    button: |
+      **Do you have an email address?**
+      ${ word(yesno(users[0].has_email_address)) }
+  - Edit: users[0].has_email_address
+    button: |
+      **Your email**:
+      ${ users[0].email }      
+    show if: users[0].has_email_address == True
+      
+  - Edit: e_signature
+    button: |
+      **Do you want to add your e-signature to your ${ form_name }?**
+      ${ word(yesno(e_signature)) }
+---
+id: edit plaintiffs review screen
+continue button field: plaintiffs.revisit
+section: Court case info
+question: |
+  Edit plaintiffs
+subquestion: |
+  ${ plaintiffs.table }
+
+  ${ plaintiffs.add_action() }
+---
+table: plaintiffs.table
+rows: plaintiffs
+columns:
+  - name: |
+      row_item.name_full() if defined("row_item.name.first") else ""
+edit:
+  - name.first
+confirm: True
+---
+id: edit defendants review screen
+continue button field: defendants.revisit
+section: Court case info
+question: |
+  Edit defendants
+subquestion: |
+  ${ defendants.table }
+
+  ${ defendants.add_action() }
+---
+table: defendants.table
+rows: defendants
+columns:
+  - name: |
+      row_item.name_full() if defined("row_item.name.first") else ""
+edit:
+  - name.first
+confirm: True
+
+---
+id: edit users review screen
+continue button field: users.revisit
+section: About you
+question: |
+  Edit users
+subquestion: |
+  ${ users.table }
+
+  ${ users.add_action() }
+---
+table: users.table
+rows: users
+columns:
+  - Name: |
+      row_item.name_full() if defined("row_item.name.first") else ""
+edit:
+  - name.first
+confirm: True
+---
+table: other_parties.table
+rows: other_parties
+columns:
+  - Name: |
+      row_item.name_full() if defined("row_item.name.first") else ""
+edit:
+  - name.first
+confirm: True
+---
+id: other monthly income revisit review screen
+section: Income
+continue button field: user_income_other_list.revisit
+question: |
+  Edit other income from last month
+subquestion: |
+  ${ user_income_other_list.table }
+
+  % if user_income_other_list.number_gathered() < 2:
+  ${ user_income_other_list.add_action() }
+  % endif
+---
+table: user_income_other_list.table
+rows: user_income_other_list
+columns:
+  - Income source: |
+      row_item.name.text if defined("row_item.name.text") else ""
+  - Amount: |
+      "$" + str(thousands(row_item.amount, show_decimals=True)) if defined("row_item.name.text") else ""
+edit:
+  - name.text
+delete buttons: True
+confirm: True
+---
+id: other annual income revisit review screen
+continue button field: user_annual_other_list.revisit
+section: Income
+question: |
+  Edit other income from last 12 months
+subquestion: |
+  ${ user_annual_other_list.table }
+
+  % if user_annual_other_list.number_gathered() < 2:
+  ${ user_annual_other_list.add_action() }
+  % endif
+---
+table: user_annual_other_list.table
+rows: user_annual_other_list
+columns:
+  - Income source: |
+      row_item.name.text if defined("row_item.name.text") else ""
+  - Amount: |
+      "$" + str(thousands(row_item.amount, show_decimals=True)) if defined("row_item.name.text") else ""
+edit:
+  - name.text
+delete buttons: True
+confirm: True
+---
+id: other expenses revisit review screen
+section: Expenses
+continue button field: user_expense_other_list.revisit
+question: |
+  Edit other monthly expenses
+subquestion: |
+  ${ user_expense_other_list.table }
+
+  % if user_expense_other_list.number_gathered() < 2:
+  ${ user_expense_other_list.add_action() }
+  % endif
+---
+table: user_expense_other_list.table
+rows: user_expense_other_list
+columns:
+  - Expense: |
+      row_item.name.text if defined("row_item.name.text") else ""
+  - Amount: |
+      "$" + str(thousands(row_item.amount, show_decimals=True)) if defined("row_item.name.text") else ""
+edit:
+  - name.text
+delete buttons: True
+confirm: True
+---
+id: other assets revisit review screen
+section: Assets
+continue button field: user_asset_other_list.revisit
+question: |
+  Edit other assets
+subquestion: |
+  ${ user_asset_other_list.table }
+
+  % if user_asset_other_list.number_gathered() < 2:
+  ${ user_asset_other_list.add_action() }
+  % endif
+---
+table: user_asset_other_list.table
+rows: user_asset_other_list
+columns:
+  - Asset: |
+      row_item.name.text if defined("row_item.name.text") else ""
+  - Value: |
+      "$" + str(thousands(row_item.amount, show_decimals=True)) if defined("row_item.name.text") else ""
+edit:
+  - name.text
+delete buttons: True
+confirm: True
+
+---
+id: income review screen
+section: Income
+event: section_income
+question: |
+  Income
+subquestion: |
+  Edit your answers below.
+review:
+  - Edit: user_is_incarcerated
+    button: |
+      **Are you currently incarcerated?**
+      % if user_is_incarcerated:
+      Yes. Inmate ID: ${ inmate_id }, Trust account balance: $${ thousands(trust_account_balance, show_decimals=True) }
+      % else:
+      No
+      % endif
+  - Edit: user_has_dependents
+    button: |
+      **Supporting any dependents in same household?**
+      ${ word(yesno(user_has_dependents)) }
+    show if: user_is_incarcerated == False
+  - Edit: user_dependents_adults
+    button: |
+      **Number of adult dependents**:
+      ${ user_dependents_adults }
+    show if: user_has_dependents and user_is_incarcerated == False
+  - Edit: user_dependents_children
+    button: |
+      **Number of minor dependents**:
+      ${ user_dependents_children }
+    show if: user_has_dependents and user_is_incarcerated == False
+  - Edit: user_benefits
+    button: |
+      **Receives public benefits?**
+      ${ word(yesno(user_benefits.any_true())) }
+    show if: user_is_incarcerated == False
+  - Edit: user_applied_for_benefits
+    button: |
+      **Applied for public benefits?**
+      ${ word(yesno(user_applied_for_benefits)) }
+  - Edit: user_income_none
+    button: |
+      **Any income (last month)?**
+      ${ word(yesno(not user_income_none)) }
+  - Edit: user_income_employment
+    button: |
+      **Income from work (last month)?**
+      ${ word(yesno(user_income_employment)) }
+    show if: not user_income_none
+  - Edit: user_income_employment_amount
+    button: |
+      **Income from work amount (last month)**:
+      ${ currency(user_income_employment_amount) }
+    show if: user_income_employment and not user_income_none
+  - Edit: user_income_ss
+    button: |
+      **Social Security income (last month)?**
+      ${ word(yesno(user_income_ss)) }
+    show if: not user_income_none
+  - Edit: user_income_ss_amount
+    button: |
+      **Social Security income amount (last month)**:
+      ${ currency(user_income_ss_amount) }
+    show if: user_income_ss and not user_income_none
+  - Edit: user_income_child_support
+    button: |
+      **Child support income (last month)?**
+      ${ word(yesno(user_income_child_support)) }
+    show if: not user_income_none
+  - Edit: user_income_child_support_amount
+    button: |
+      **Child support amount (last month)**:
+      ${ currency(user_income_child_support_amount) }
+    show if: user_income_child_support and not user_income_none
+  - Edit: user_income_unemployment
+    button: |
+      **Unemployment benefits (last month)?**
+      ${ word(yesno(user_income_unemployment)) }
+    show if: not user_income_none
+  - Edit: user_income_unemployment_amount
+    button: |
+      **Unemployment benefits amount (last month)**:
+      ${ currency(user_income_unemployment_amount) }
+    show if: user_income_unemployment and not user_income_none
+  - Edit: user_income_pension
+    button: |
+      **Pension (last month)?**
+      ${ word(yesno(user_income_pension)) }
+    show if: not user_income_none
+  - Edit: user_income_pension_amount
+    button: |
+      **Pension amount (last month)**:
+      ${ currency(user_income_pension_amount) }
+    show if: user_income_pension and not user_income_none
+  - Edit: user_income_household
+    button: |
+      **Income from household members (last month)?**
+      ${ word(yesno(user_income_household)) }
+    show if: not user_income_none
+  - Edit: user_income_household_amount
+    button: |
+      **Household member income amount (last month)**:
+      ${ currency(user_income_household_amount) }
+    show if: user_income_household and not user_income_none
+  - Edit: user_income_other
+    button: |
+      **Other income (last month)?**
+      ${ word(yesno(user_income_other)) }
+    show if: not user_income_none
+  - Edit: user_income_other_list.revisit
+    button: |
+      **Other income from last month (Edit to change details):**
+
+      % for my_var in user_income_other_list:
+      * $${thousands(my_var.amount, show_decimals=True)} from ${my_var.name.text}
+      % endfor
+    show if: user_income_other and not user_income_none
+  - Edit: 
+      - user_income_none
+      - recompute:
+        - user_income_total
+    button: |
+      **Total income (last month)**:
+      ${ currency(user_income_total) }
+    show if: not user_income_none
+  - Edit: user_annual_none
+    button: |
+      **Any income (last 12 months)?**
+      ${ word(yesno( not user_annual_none)) }
+  - Edit: user_annual_employment
+    button: |
+      **Income from work (last 12 months)?**
+      ${ word(yesno(user_annual_employment)) }
+    show if: not user_annual_none
+  - Edit: user_annual_employment_amount
+    button: |
+      **Income from work amount (last 12 months)**:
+      ${ currency(user_annual_employment_amount) }
+    show if: not user_annual_none and user_annual_employment
+  - Edit: user_annual_ss
+    button: |
+      **Social Security (last 12 months)?**
+      ${ word(yesno(user_annual_ss)) }
+    show if: not user_annual_none
+  - Edit: user_annual_ss_amount
+    button: |
+      **Social Security income amount (last 12 months)**:
+      ${ currency(user_annual_ss_amount) }
+    show if: user_annual_ss and not user_annual_none
+  - Edit: user_annual_child_support
+    button: |
+      **Child support (last 12 months)?**
+      ${ word(yesno(user_annual_child_support)) }
+    show if: not user_annual_none
+  - Edit: user_annual_child_support_amount
+    button: |
+      **Child support amount (last 12 months)**:
+      ${ currency(user_annual_child_support_amount) }
+    show if: user_annual_child_support and not user_annual_none
+  - Edit: user_annual_unemployment
+    button: |
+      **Unemployment benefits (last 12 months)?**
+      ${ word(yesno(user_annual_unemployment)) }
+    show if: not user_annual_none
+  - Edit: user_annual_unemployment_amount
+    button: |
+      **Unemployment benefits amount (last 12 months)**:
+      ${ currency(user_annual_unemployment_amount) }
+    show if: user_annual_unemployment and not user_annual_none
+  - Edit: user_annual_pension
+    button: |
+      **Pension (last 12 months)?**
+      ${ word(yesno(user_annual_pension)) }
+    show if: not user_annual_none
+  - Edit: user_annual_pension_amount
+    button: |
+      **Pension amount (last 12 months)**:
+      ${ currency(user_annual_pension_amount) }
+    show if: user_annual_pension and not user_annual_none
+  - Edit: user_annual_household
+    button: |
+      **Household income (last 12 months)?**
+      ${ word(yesno(user_annual_household)) }
+    show if: not user_annual_none
+  - Edit: user_annual_household_amount
+    button: |
+      **Household income amount (last 12 months)**:
+      ${ currency(user_annual_household_amount) }
+    show if: user_annual_household and not user_annual_none
+  - Edit: user_annual_other
+    button: |
+      **Other income (last 12 months)?**
+      ${ word(yesno(user_annual_other)) }
+    show if: not user_annual_none
+  - Edit: user_annual_other_list.revisit
+    button: |
+      **Other income from last year (Edit to change details):**
+
+      % for my_var in user_annual_other_list:
+      * $${thousands(my_var.amount, show_decimals=True)} from ${my_var.name.text}
+      % endfor
+    show if: user_annual_other and not user_annual_none
+  - Edit: 
+      - user_annual_none
+      - recompute:
+        - user_annual_total
+    button: |
+      **Total income (last 12 months)**:
+      ${ currency(user_annual_total) }
+    show if: not user_annual_none
+
+---
+id: expenses review screen
+section: Expenses
+event: section_expenses
+question: |
+  Expenses
+subquestion: |
+  Edit your answers below.
+review:
+  - Edit: user_expense_none
+    button: |
+      **Do you have any expenses?**:
+      ${ word(yesno(not user_expense_none)) }
+  - Edit: user_expense_rent
+    button: |
+      **Rent?**
+      ${ word(yesno(user_expense_rent)) }
+    show if: not user_expense_none
+  - Edit: user_expense_rent_amount
+    button: |
+      **Rent amount**:
+      ${ currency(user_expense_rent_amount) }
+    show if: not user_expense_none and user_expense_rent
+  - Edit: user_expense_mortgage
+    button: |
+      **Mortgage for home?**
+      ${ word(yesno(user_expense_mortgage)) }
+    show if: not user_expense_none
+  - Edit: user_expense_mortgage_amount
+    button: |
+      **Home mortgage amount**:
+      ${ currency(user_expense_mortgage_amount) }
+    show if: user_expense_mortgage and not user_expense_none
+  - Edit: user_expense_other_mortgage
+    button: |
+      **Other mortgage?**
+      ${ word(yesno(user_expense_other_mortgage)) }
+    show if: not user_expense_none
+  - Edit: user_expense_other_mortgage_amount
+    button: |
+      **Other mortgage amount**:
+      ${ currency(user_expense_other_mortgage_amount) }
+    show if: user_expense_other_mortgage and not user_expense_none
+  - Edit: user_expense_utilities
+    button: |
+      **Utilities?**
+      ${ word(yesno(user_expense_utilities)) }
+    show if: not user_expense_none
+  - Edit: user_expense_utilities_amount
+    button: |
+      **Utilities amount**:
+      ${ currency(user_expense_utilities_amount) }
+    show if: user_expense_utilities and not user_expense_none
+  - Edit: user_expense_food
+    button: |
+      **Food?**
+      ${ word(yesno(user_expense_food)) }
+    show if: not user_expense_none
+  - Edit: user_expense_food_amount
+    button: |
+      **Food amount**:
+      ${ currency(user_expense_food_amount) }
+    show if: user_expense_food and not user_expense_none
+  - Edit: user_expense_medical
+    button: |
+      **Medical expenses?**
+      ${ word(yesno(user_expense_medical)) }
+    show if: not user_expense_none
+  - Edit: user_expense_medical_amount
+    button: |
+      **Medical expenses amount**:
+      ${ currency(user_expense_medical_amount) }
+    show if: user_expense_medical and not user_expense_none
+  - Edit: user_expense_car
+    button: |
+      **Vehicle, including any loans?**
+      ${ word(yesno(user_expense_car)) }
+    show if: not user_expense_none
+  - Edit: user_expense_car_amount
+    button: |
+      **Vehicle loan amount**:
+      ${ currency(user_expense_car_amount) }
+    show if: user_expense_car and not user_expense_none
+  - Edit: user_expense_childcare
+    button: |
+      **Childcare?**
+      ${ word(yesno(user_expense_childcare)) }
+    show if: not user_expense_none
+  - Edit: user_expense_childcare_amount
+    button: |
+      **Childcare amount**:
+      ${ currency(user_expense_childcare_amount) }
+    show if: user_expense_childcare and not user_expense_none
+  - Edit: user_expense_child_support
+    button: |
+      **Child support?**
+      ${ word(yesno(user_expense_child_support)) }
+    show if: not user_expense_none
+  - Edit: user_expense_child_support_amount
+    button: |
+      **Child support amount**:
+      ${ currency(user_expense_child_support_amount) }
+    show if: user_expense_child_support and not user_expense_none
+  - Edit: user_expense_other
+    button: |
+      **Other expenses?**
+      ${ word(yesno(user_expense_other)) }
+    show if: not user_expense_none
+  - Edit: user_expense_other_list.revisit
+    button: |
+      **Other monthly expenses (Edit to change details):**
+
+      % for my_var in user_expense_other_list:
+      * $${thousands(my_var.amount, show_decimals=True)} for ${my_var.name.text}
+      % endfor
+    show if: user_expense_other and not user_expense_none
+  - Edit: 
+      - user_expense_none
+      - recompute:
+        - user_expense_total
+    button: |
+      **Total expenses**:
+      ${ currency(user_expense_total) }
+    show if: not user_expense_none
+
+---
+id: assets review screen
+section: Assets
+event: section_assets
+question: |
+  Assets
+subquestion: |
+  Edit your answers below.
+review:
+  - Edit: user_asset_none
+    button: |
+      **Do you have any assets?**
+      ${ word(yesno(not user_asset_none)) }
+  - Edit: user_asset_bank_account
+    button: |
+      **Bank account or cash?**
+      ${ word(yesno(user_asset_bank_account)) }
+    show if: not user_asset_none
+  - Edit: user_asset_bank_account_amount
+    button: |
+      **Bank account or cash amount**:
+      ${ currency(user_asset_bank_account_amount) }
+    show if: user_asset_bank_account and not user_asset_none
+  - Edit: user_asset_home
+    button: |
+      **Home?**
+      ${ word(yesno(user_asset_home)) }
+    show if: not user_asset_none
+  - Edit: user_asset_home_amount
+    button: |
+      **Home value**:
+      ${ currency(user_asset_home_amount) }
+    show if: user_asset_home and not user_asset_none
+  - Edit: user_asset_home_amount_owed
+    button: |
+      **Amount owed on mortgage**:
+      ${ currency(user_asset_home_amount_owed) }
+    show if: user_asset_home and not user_asset_none
+  - Edit: user_asset_other_real_estate
+    button: |
+      **Other real estate?**
+      ${ word(yesno(user_asset_other_real_estate)) }
+    show if: not user_asset_none
+  - Edit: user_asset_other_real_estate_amount
+    button: |
+      **Other real estate value**:
+      ${ currency(user_asset_other_real_estate_amount) }
+    show if: user_asset_other_real_estate and not user_asset_none
+  - Edit: user_asset_vehicle1
+    button: |
+      **Vehicle?**
+      ${ word(yesno(user_asset_vehicle1)) }
+    show if: not user_asset_none
+  - Edit: user_asset_vehicle1_amount
+    button: |
+      **Vehicle value**:
+      ${ currency(user_asset_vehicle1_amount) }
+    show if: user_asset_vehicle1 and not user_asset_none
+  - Edit: user_asset_vehicle1_paid
+    button: |
+      **Vehicle is paid in full?**
+      ${ word(yesno(user_asset_vehicle1_paid)) }
+    show if: user_asset_vehicle1 and not user_asset_none
+  - Edit: user_asset_vehicle2
+    button: |
+      **Second vehicle?**
+      ${ word(yesno(user_asset_vehicle2)) }
+    show if: user_asset_vehicle1 and not user_asset_none
+  - Edit: user_asset_vehicle2_amount
+    button: |
+      **Second vehicle value**:
+      ${ currency(user_asset_vehicle2_amount) }
+    show if: user_asset_vehicle1 and user_asset_vehicle2 and not user_asset_none
+  - Edit: user_asset_vehicle2_paid
+    button: |
+      **Second vehicle is paid in full?**
+      ${ word(yesno(user_asset_vehicle2_paid)) }
+    show if: user_asset_vehicle1 and user_asset_vehicle2 and not user_asset_none
+  - Edit: user_asset_other
+    button: |
+      **Other assets?**
+      ${ word(yesno(user_asset_other)) }
+    show if: not user_asset_none
+  - Edit: user_asset_other_list.revisit
+    button: |
+      **Other monthly assets (Edit to change details):**
+
+      % for my_var in user_asset_other_list:
+      * ${my_var.name.text} worth $${thousands(my_var.amount, show_decimals=True)} 
+      % endfor
+    show if: user_asset_other and not user_asset_none
+---
+id: court case info review screen
+section: Court case info
+event: section_case_info
+question: |
+  Court case info
+subquestion: |
+  Edit your answers below.
+review:
+  - Edit: plaintiffs.revisit
+    button: |
+      **Plaintiffs / Petitioners:**
+
+      % for item in plaintiffs:
+        * ${ item.name_full() }
+      % endfor
+  - Edit: defendants.revisit
+    button: |
+      **Defendants / Respondents:**
+
+      % if not other_parties.there_are_any:
+      * None entered
+      % else:
+      % for item in defendants:
+        * ${ item.name_full() }
+      % endfor
+      % endif
+  - Edit: in_re_check
+    button: |
+      **Does the court case have "In re:" in the name?**  
+      ${word(yesno(in_re_check))}
+  - Edit: in_re_label
+    button: |
+      **In re:** ${in_re_label}
+    show if: in_re_check
+  - Edit: docket_number
+    button: |
+      **Circuit court case number**:
+      ${ docket_number }
+  - Edit: 
+      - trial_court_index
+      - recompute:
+        - trial_court
+    button: |
+      **County where the circuit court case was filed:**
+      ${ trial_court.address.county }
+  - Edit: judge.name.last
+    button: |
+      **Circuit court judge:** ${ judge.name_full()}
+
+  - Edit: minor_involvement
+    button: |
+      **Case involves a minor child?**
+      ${word(yesno(minor_involvement))}
+  - Edit: juvenile_act_involvement
+    button: |
+      **Case involves a juvenile delinquency proceeding?**
+      ${word(yesno(juvenile_act_involvement))}
+  - Edit: user_is_appellant
+    button: |
+      **Are you or someone on your side of the case filing the appeal?**
+      ${word(yesno(user_is_appellant))}
+  - Edit: appellate_district
+    button: |
+      **In which Appellate district was the case filed?**
+      ${appellate_district}
+  - Edit: appellate_case_number
+    button: |
+      **Appellate court case number**:
+      % if dont_know_docket_number:
+      I don't know.
+      % else:
+      ${ appellate_case_number }
+      % endif
+
+---
+id: about you review screen
+section: About you
+event: section_about_you
+question: |
+  About you
+subquestion: |
+  Edit your answers below.
+review:
+  - Edit: users[0].name.first
+    button: |
+      **Your name:**
+      ${ users[0].name_full() }
+  - Edit: user_is_incarcerated
+    button: |
+      **Are you currently incarcerated?**
+      % if user_is_incarcerated:
+      Yes. Inmate ID: ${ inmate_id }, Trust account balance: $${ thousands(trust_account_balance, show_decimals=True) }
+      % else:
+      No
+      % endif
+  - Edit: substantial_hardship_explanation
+    button: |
+      **Substantial hardship because**:
+      ${ substantial_hardship_explanation.replace("\n", " ").replace("\r", " ") }
+  - Edit: user_has_dependents
+    button: |
+      **Supporting any dependents in same household?**
+      ${ word(yesno(user_has_dependents)) }
+  - Edit: user_dependents_adults
+    button: |
+      **Number of adult dependents**:
+      ${ user_dependents_adults }
+    show if: user_has_dependents
+  - Edit: user_dependents_children
+    button: |
+      **Number of minor dependents**:
+      ${ user_dependents_children }
+    show if: user_has_dependents
+  - Edit: users[0].address.address
+    button: |
+      % if filing_basis != "filing_self":
+      **${ users[0].familiar() }'s address:**
+      % else:
+      **Your address:**
+      % endif
+      ${ users[0].address.on_one_line(bare=True) }
+  - Edit: users[0].has_email_address
+    button: |
+      **Your phone number**:
+      ${ phone_number_formatted(users[0].phone_number) }      
+  - Edit: users[0].has_email_address
+    button: |
+      **Do you have an email address?**
+      ${ word(yesno(users[0].has_email_address)) }
+  - Edit: users[0].has_email_address
+    button: |
+      **Your email**:
+      ${ users[0].email }      
+    show if: users[0].has_email_address == True
+  - Edit: e_signature
+    button: |
+      **Do you want to add your e-signature to your ${ form_name }?**
+      ${ word(yesno(e_signature)) }
