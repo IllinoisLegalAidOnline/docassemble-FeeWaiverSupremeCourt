@@ -19,7 +19,7 @@ code: |
   ilao_easy_form_title = "Fee waiver - Supreme Court"
   github_repo_name = "docassemble-FeeWaiverSupremeCourt"
   github_user = 'IllinoisLegalAidOnline'
-  form_name = "Supreme court fee waiver"
+  form_name = "Supreme Court fee waiver"
   al_form_type = 'existing_case'
   allowed_courts = ['Circuit']
 ---
@@ -53,7 +53,7 @@ code: |
   accept_terms
   whats_next
   set_progress(10)
-  appellate_fee_waiver
+  supreme_fee_waiver
   filing_basis = "filing_self"
 
   nav.set_section('section_income')
@@ -102,9 +102,11 @@ code: |
   minor_involvement
   juvenile_act_involvement
 
-  user_is_appellant
   appellate_district
   appellate_case_number
+
+  user_is_appellant
+  supreme_case_number
   
   set_progress(85)
   nav.set_section('section_about_you')
@@ -180,11 +182,11 @@ code: |
 ---
 id: welcome
 question: |
-  Fee waiver - Appellate Court
+  Fee waiver - Supreme Court
 subquestion: |
-  Welcome to Illinois Legal Aid Online's **Fee waiver - Appellate Court** Easy Form.
+  Welcome to Illinois Legal Aid Online's **Fee waiver - Supreme Court** Easy Form.
   
-  This program makes a *Application for Waiver of Appellate Court Fees*, which asks the court to let you participate in an appeal for free or at a reduced cost.
+  This program makes a *Application for Waiver of Supreme Court Fees*, which asks the court to let you participate in an appeal to the Illinois Supreme Court for free or at a reduced cost.
   
   To learn more, read ILAO's article about [**court fees and fee waivers**](https://www.illinoislegalaid.org/node/189246).
 field: sees_nav_bar
@@ -214,8 +216,9 @@ subquestion: |
 
   You will also need to know information about the:
   
-  * Circuit court case, including case number, county, and judge, and
-  * Appellate court case for which you are requesting a fee waiver, including appellate district and who filed the appeal.
+  * Circuit court case, including case number, county, and judge, 
+  * Appellate court case, including case number, district, and judge,
+  * Supreme Court case for which you are requesting a fee waiver, including who filed the appeal.
 
   You can find information about court cases on your court papers or documents you received from the court clerks.
   
@@ -236,11 +239,11 @@ continue button field: whats_next
 question: |
   After you finish this program
 subquestion: |
-  After you download your *Application for Waiver of Appellate Court Fees* (${ form_name }), you must file it with the court. This program **does not file** your ${ form_name } for you.
+  After you download your *Application for Waiver of Supreme Court Fees* (${ form_name }), you must file it with the court. This program **does not file** your ${ form_name } for you.
   
-  **Note:** You can file your ${ form_name } at any time during your appellate court case. It is usually done when a person files their first forms in appellate court. That way they might have all of the court fees in a case waived.
+  **Note:** You can file your ${ form_name } at any time during your Supreme Court case. It is usually done when a person files their first forms in Supreme Court. That way they might have all of the court fees in a case waived.
   
-  To learn more, read the "How to Request an Appellate Court Fee Waiver" instructions you can download at the end of this program. 
+  To learn more, read the "How to Request an Supreme Court Fee Waiver" instructions you can download at the end of this program. 
 ---
 template: get_legal_help
 subject: |
@@ -250,18 +253,18 @@ content: |
   
   Use [**Get Legal Help**](https://www.illinoislegalaid.org/get-legal-help) to find free or low-cost legal services in your area.
 ---
-id: appellate court only
-continue button field: appellate_fee_waiver
+id: supreme court only
+continue button field: supreme_fee_waiver
 question: |
-  Fee waiver for appellate court 
+  Fee waiver for supreme court 
 subquestion: |
-  You can use this program to make fee waiver forms if you have a case in the Illinois Appellate Court.
+  You can use this program to make fee waiver forms if you have a case in the Illinois Supreme Court.
   
   There are **different fee waiver forms** to use if:
 
   * Your case is in the circuit court. This is also called the trial court, and it is where most cases start. Examples of circuit court cases are divorce, family law, evictions, small claims, foreclosures, and lawsuits for injury or property damage. Asking a judge to expunge or seal a criminal case is also started in circuit court. If you need to ask for a fee waiver in a circuit court case, use the [**Fee waiver Easy Form**](https://www.illinoislegalaid.org/node/30831).
   
-  * Your case is in the Illinois Supreme Court. If you need to ask for a fee waiver in a Supreme Court case, use the [**Fee waiver - Supreme Court of Illinois Easy Form**](https://www.illinoislegalaid.org/node/158696).
+  * Your case is in the appellate court. If you need to ask for a fee waiver in an appellate case, use the [**Fee waiver - Appellate Court Easy Form**](https://www.illinoislegalaid.org/node/88446).
   
   If you were ordered to pay court costs (called "assessments") in a criminal or traffic case and cannot afford them, use the [**Criminal Court fee waiver Easy Form**](https://www.illinoislegalaid.org/node/154466).
 ---
@@ -587,7 +590,7 @@ fields:
 ---
 terms: 
   - "certain types of income": |
-      These income types are listed on the ${ form_name } application:
+      These income types are listed on the fee waiver application:
       
        * Employment
        * Social Security (not SSI)
@@ -604,33 +607,6 @@ code: |
 code: |
   if user_income_other_list.number_gathered() >= 2:
     user_income_other_list.there_is_another = False
----
-# replaced by other function march 2026
-#depends on:
-#  - user_income_other_list[0].amount
-#  - user_income_other_list[1].amount
-#  - user_income_household_amount
-#  - user_income_ss_amount
-#  - user_income_employment_amount
-#  - user_income_child_support_amount
-#  - user_income_unemployment_amount'
-#  - user_income_pension_amount 
-#code: |
-#  def sum_if_defined(*pargs):
-#    total = 0
-#    for source in pargs:
-#      if defined(source):
-#        total += value(source)
-#    return total        
-#  
-#  user_income_total = sum_if_defined('user_income_other_list[0].amount', 
-#      'user_income_other_list[1].amount',
-#      'user_income_household_amount',
-#      'user_income_ss_amount',
-#      'user_income_employment_amount',
-#      'user_income_child_support_amount',
-#      'user_income_unemployment_amount',
-#      'user_income_pension_amount')
 ---
 reconsider: True
 code: |
@@ -1713,22 +1689,13 @@ content: |
 ---
 id: appellate court case number
 question: |
-  Do you know ${ your_or_obo_possessive } appellate court case number?
+  What is the appellate court case number?
 subquestion: |
   In Illinois, the appellate case number is assigned by the appellate court clerk after the appeal is filed. The case number will be listed on ${ your_or_obo_possessive } appellate court papers.
-  
-  If the appeal has not been filed yet, select **I don't know the appellate court case number.**
 
   ${ collapse_template(appellate_case_number_help) }  
 fields:
-  - "I don't know the appellate court case number.": dont_know_appellate_case_number
-    datatype: yesno    
-  - Appellate court case number: appellate_case_number
-    maxlength: 20
-    hide if: dont_know_appellate_case_number
-validation code: |
-  if dont_know_appellate_case_number:
-    appellate_case_number = ''      
+  - Appellate court case number: appellate_case_number   
 ---
 template: appellate_case_number_help
 subject: |
@@ -1740,13 +1707,38 @@ content: |
   
   [FILE appellate_case_number_example.png, 100%, Appellate form showing appellate case number]
 ---
+id: supreme court case number
+question: |
+  Do you know ${ your_or_obo_possessive } Supreme Court case number? 
+subquestion: |
+  The case number will be listed on ${ your_or_obo_possessive } Supreme Court papers.
+
+  ${collapse_template(supreme_number_help)}
+fields: 
+  - "I don't know the Supreme Court case number.": dont_know_supreme_case_number
+    datatype: yesno
+  - Supreme Court case number: supreme_case_number
+    maxlength: 20
+    hide if: dont_know_supreme_case_number
+validation code: |
+  if dont_know_supreme_case_number:
+    supreme_case_number = ''
+---
+template: supreme_number_help
+subject: |
+  **Where to find the Supreme Court case number**
+content: |  
+  The case number will be listed on ${ your_or_obo_possessive } Supreme Court papers. It is usually at the top or in the top-right part of the first page.
+    
+  In this example, the case number is **2026 SU 000321**.
+  
+  [FILE supreme_case_number_example.png, 100%, Supreme court form showing supreme court case number]
+---
 id: appellate district
 question: |
-  Which appellate district was the appeal filed in?
+  Which appellate district was the first appeal filed in?
 subquestion: |
-  If the case was already filed in the appellate court, the appellate district should be listed near the top of the appellate court forms.
-
-  If you are starting a new appeal, you can use this [map of Illinois Judicial Districts](https://www.illinoiscourts.gov/courts/appellate-court/) to find the appellate district where you should file.
+  The appellate district should be listed near the top of the appellate court forms.
 fields:
   - Appellate district: appellate_district
     input type: radio
@@ -1797,11 +1789,11 @@ fields:
     code: |
       name_suffix()
 ---
-id: who is filing appeal
+id: who is filing supreme appeal
 question: |
-  Who is filing the appeal?
+  Who is filing the appeal to the Supreme Court?
 subquestion: |
-  The person or company who the circuit court ruled against is usually the one who files the appeal. These are the participants in your case:
+  The person or company who the appellate court ruled against is usually the one who files the appeal to the Supreme Court. These are the participants in your case:
 
   Your side:
 
@@ -1819,9 +1811,9 @@ subquestion: |
   % endfor
   % endif
   
-  If you or someone on your side of the case is asking the appellate court to review an order of the circuit court, select **Me or someone on my side**.
+  If you or someone on your side of the case is asking the Supreme Court to review an order of the appellate court, select **Me or someone on my side**.
 
-  If you or someone on the other side of the case is asking the appellate court to review an order of the circuit court, select **Someone on the other side**.
+  If you or someone on the other side of the case is asking the Supreme Court to review an order of the appellate court, select **Someone on the other side**.
 fields:
   - Who is filing the appeal?: user_is_appellant
     datatype: radio
@@ -1839,7 +1831,7 @@ subquestion: |
 
   <div class="alert alert-info ilao-info" role="alert">
     <h6 class="alert-heading">What it means to sign your forms</h6>
-    <p>By signing your <i>Application for Waiver of Appellate Court Fees</i>, you are certifying that:</p>
+    <p>By signing your <i>Application for Waiver of Supreme Court Fees</i>, you are certifying that:</p>
     <p><ul>
       <li>Everything on the form is true and correct, or you have been informed or believe it to be true and correct, and</li>
       <li>You understand that making a false statement on the form is perjury and has penalties provided by law.</li>
@@ -1888,17 +1880,17 @@ continue button field: bring_docs
 question: |
   Next steps and supporting documents
 subquestion: |
-  After you file your ${ form_name } application, a judge will review it. If they have questions, you may need to give more information or documentation. For example, you may be asked to show:
+  After you file your ${ form_name } application, the court will review it. If they have questions, you may need to give more information or documentation. For example, you may be asked to show:
   
   * Proof of public benefits received,
   * Proof of income, and
   * The value of any belongings.
   
-  **Note:** Some courts require that you submit proof of benefits or income when you file your ${ form_name } application. If you are e-filing, you may need to upload proof of benefits or income. The appellate clerk will let you know how to provide more information for your application.
+  **Note:** Some courts require that you submit proof of benefits or income when you file your ${ form_name } application. If you are e-filing, you may need to upload proof of benefits or income. The Supreme Court clerk will let you know how to provide more information for your application.
 
   Once the court decides, they will send you an order. This order will say if you must pay none of the court fees, some of the court fees, or all of the court fees.
   
-  Finally, the appellate clerk will mail or email you a copy of the order.  
+  Finally, the Supreme Court clerk will mail or email you a copy of the order.  
 ---
 id: forms assembling
 continue button field: forms_assembling
@@ -1945,7 +1937,7 @@ under: |
 generic object: ALDocumentBundle
 template: x.send_email_template
 subject: |
-  Fee waiver - Appellate Court forms
+  Fee waiver - Supreme Court forms
 content: |
   Your forms are attached.
   
@@ -1955,15 +1947,15 @@ content: |
 ---
 objects:
   - instructions: ALDocument.using(title="Instructions", filename="instructions.pdf", has_addendum=False)
-  - application: ALDocument.using(title="Appellate fee waiver application", filename="application.pdf", has_addendum=False)
+  - application: ALDocument.using(title="Supreme Court fee waiver application", filename="application.pdf", has_addendum=False)
 ---
 code: |
   instructions.enabled = True
   application.enabled = True
 ---
 objects:
-  - al_user_bundle: ALDocumentBundle.using(elements=[instructions, application], filename="appellate_fee_waiver_package.pdf", title="All forms")
-  - al_court_bundle: ALDocumentBundle.using(elements=[application], filename="appellate_fee_waiver_package.pdf", title="All forms")
+  - al_user_bundle: ALDocumentBundle.using(elements=[instructions, application], filename="supreme_fee_waiver_package.pdf", title="All forms")
+  - al_court_bundle: ALDocumentBundle.using(elements=[application], filename="supreme_fee_waiver_package.pdf", title="All forms")
 ---
 attachments:
   - name: instructions
@@ -3242,17 +3234,20 @@ review:
       ${word(yesno(user_is_appellant))}
   - Edit: appellate_district
     button: |
-      **In which Appellate district was the case filed?**
+      **Appellate district where the appellate case was filed:**
       ${appellate_district}
   - Edit: appellate_case_number
     button: |
       **Appellate court case number**:
-      % if dont_know_docket_number:
+      ${ appellate_case_number }
+  - Edit: supreme_case_number
+    button: |
+      **Supreme Court case number**:
+      % if dont_know_supreme_case_number:
       I don't know.
       % else:
-      ${ appellate_case_number }
+      ${supreme_case_number}
       % endif
-
   - note: |
       <h4>About you</h4>      
   - Edit: substantial_hardship_explanation
@@ -3946,15 +3941,19 @@ review:
       ${word(yesno(user_is_appellant))}
   - Edit: appellate_district
     button: |
-      **In which Appellate district was the case filed?**
+      **Appellate district where the appellate case was filed:**
       ${appellate_district}
   - Edit: appellate_case_number
     button: |
       **Appellate court case number**:
-      % if dont_know_docket_number:
+      ${ appellate_case_number }
+  - Edit: supreme_case_number
+    button: |
+      **Supreme Court case number**:
+      % if dont_know_supreme_case_number:
       I don't know.
       % else:
-      ${ appellate_case_number }
+      ${supreme_case_number}
       % endif
 
 ---
