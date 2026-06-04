@@ -243,7 +243,7 @@ subquestion: |
   
   **Note:** You can file your ${ form_name } at any time during your Supreme Court case. It is usually done when a person files their first forms in Supreme Court. That way they might have all of the court fees in a case waived.
   
-  To learn more, read the "How to Request an Supreme Court Fee Waiver" instructions you can download at the end of this program. 
+  To learn more, read the "How to Request a Supreme Court Fee Waiver" instructions you can download at the end of this program. 
 ---
 template: get_legal_help
 subject: |
@@ -256,7 +256,7 @@ content: |
 id: supreme court only
 continue button field: supreme_fee_waiver
 question: |
-  Fee waiver for supreme court 
+  Fee waiver for Illinois Supreme Court 
 subquestion: |
   You can use this program to make fee waiver forms if you have a case in the Illinois Supreme Court.
   
@@ -1732,7 +1732,7 @@ content: |
     
   In this example, the case number is **2026 SU 000321**.
   
-  [FILE supreme_case_number_example.png, 100%, Supreme court form showing supreme court case number]
+  [FILE supreme_case_number_example.png, 100%, Supreme Court form showing Supreme Court case number]
 ---
 id: appellate district
 question: |
@@ -1775,9 +1775,11 @@ fields:
 ---
 id: trial court judge name
 question: |
-  What is the name of the circuit court judge who issued the order being appealed?
+  What is the name of the circuit court judge who heard the original case?
 subquestion: |  
-  You do not need to enter the judge's full name. You are only required to enter the judge's last name.  
+  This is **not** the appellate court judge.
+  
+  You do not need to enter the judge's full name. You are only required to enter the judge's last name. 
 fields:
   - First: judge.name.first
     required: False
@@ -3228,10 +3230,6 @@ review:
     button: |
       **Case involves a juvenile delinquency proceeding?**
       ${word(yesno(juvenile_act_involvement))}
-  - Edit: user_is_appellant
-    button: |
-      **Are you or someone on your side of the case filing the appeal?**
-      ${word(yesno(user_is_appellant))}
   - Edit: appellate_district
     button: |
       **Appellate district where the appellate case was filed:**
@@ -3240,6 +3238,10 @@ review:
     button: |
       **Appellate court case number**:
       ${ appellate_case_number }
+  - Edit: user_is_appellant
+    button: |
+      **Are you or someone on your side of the case filing the appeal?**
+      ${word(yesno(user_is_appellant))}
   - Edit: supreme_case_number
     button: |
       **Supreme Court case number**:
@@ -3935,10 +3937,6 @@ review:
     button: |
       **Case involves a juvenile delinquency proceeding?**
       ${word(yesno(juvenile_act_involvement))}
-  - Edit: user_is_appellant
-    button: |
-      **Are you or someone on your side of the case filing the appeal?**
-      ${word(yesno(user_is_appellant))}
   - Edit: appellate_district
     button: |
       **Appellate district where the appellate case was filed:**
@@ -3947,6 +3945,10 @@ review:
     button: |
       **Appellate court case number**:
       ${ appellate_case_number }
+  - Edit: user_is_appellant
+    button: |
+      **Are you or someone on your side of the case filing the appeal?**
+      ${word(yesno(user_is_appellant))}
   - Edit: supreme_case_number
     button: |
       **Supreme Court case number**:
