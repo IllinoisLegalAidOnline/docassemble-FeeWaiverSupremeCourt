@@ -1,6 +1,7 @@
 metadata:
   title: Fee waiver - Supreme Court
   short title: Fee waiver - Supreme Court
+  comment: This Easy Form helps you ask the Illinois Supreme Court to waive or reduce filing fees.
   authors:
     - Vivian McNaughton
     - Matt Newsted
@@ -122,6 +123,7 @@ code: |
   nav.set_section('section_download')
   forms_assembling
   snapshot_forms
+  set_progress_to_100_once
   get_docs_screen
 ---
 code: |
@@ -151,6 +153,16 @@ code: |
 code: |
   reconsider('snapshot_interview_state')
   snapshot_forms = True
+---
+# this code block will ensure that when a user reaches the download screen, My Easy Forms will list it as 100% complete
+code: |
+    al_temp_metadata = get_interview_metadata(
+      current_context().filename, current_context().session
+    )
+    al_temp_metadata["progress"] = 100
+    set_current_session_metadata(al_temp_metadata)
+    del(al_temp_metadata)
+    set_progress_to_100_once = True
 ---
 id: trial court county
 continue button field: case_county
@@ -216,8 +228,8 @@ subquestion: |
 
   You will also need to know information about the:
   
-  * Circuit court case, including case number, county, and judge, 
-  * Appellate court case, including case number, district, and judge,
+  * Circuit court case, including the case number, county, and judge, 
+  * Appellate court case, including the case number and district,
   * Supreme Court case for which you are requesting a fee waiver, including who filed the appeal.
 
   You can find information about court cases on your court papers or documents you received from the court clerks.
