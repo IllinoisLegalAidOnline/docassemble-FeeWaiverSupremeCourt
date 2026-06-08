@@ -1,5 +1,5 @@
 metadata:
-  title: Fee waiver - Supreme Court
+  title: Fee waiver - Supreme Court of Illinois
   short title: Fee waiver - Supreme Court
   comment: This Easy Form helps you ask the Illinois Supreme Court to waive or reduce filing fees.
   authors:
@@ -17,7 +17,7 @@ modules:
 mandatory: True
 code: |
   ilao_easy_form_url = "https://www.illinoislegalaid.org/legal-information/fee-waiver-supreme-court-illinois"
-  ilao_easy_form_title = "Fee waiver - Supreme Court"
+  ilao_easy_form_title = "Fee waiver - Supreme Court of Illinois"
   github_repo_name = "docassemble-FeeWaiverSupremeCourt"
   github_user = 'IllinoisLegalAidOnline'
   form_name = "Supreme Court fee waiver"
@@ -194,9 +194,9 @@ code: |
 ---
 id: welcome
 question: |
-  Fee waiver - Supreme Court
+  Fee waiver - Supreme Court of Illinois
 subquestion: |
-  Welcome to Illinois Legal Aid Online's **Fee waiver - Supreme Court** Easy Form.
+  Welcome to Illinois Legal Aid Online's **Fee waiver - Supreme Court of Illinois** Easy Form.
   
   This program makes a *Application for Waiver of Supreme Court Fees*, which asks the court to let you participate in an appeal to the Illinois Supreme Court for free or at a reduced cost.
   
@@ -1143,10 +1143,6 @@ code: |
         expense_sum += user_expense_car_amount
       if user_expense_child_support:
         expense_sum += user_expense_child_support_amount
-      if user_expense_car:
-        expense_sum += user_expense_car_amount
-      if user_expense_child_support:
-        expense_sum += user_expense_child_support_amount
       if user_expense_childcare:
         expense_sum += user_expense_childcare_amount
       if user_expense_food:
@@ -1900,11 +1896,11 @@ subquestion: |
   * Proof of income, and
   * The value of any belongings.
   
-  **Note:** Some courts require that you submit proof of benefits or income when you file your ${ form_name } application. If you are e-filing, you may need to upload proof of benefits or income. The Supreme Court clerk will let you know how to provide more information for your application.
+  **Note:** If you are e-filing, you may need to upload proof of benefits or income. The Supreme Court clerk will let you know how to provide more information for your application.
 
-  Once the court decides, they will send you an order. This order will say if you must pay none of the court fees, some of the court fees, or all of the court fees.
+  Once the court decides, they will send you an Official Notice of Order on Application for Waiver of Supreme Court Fees. The Supreme Court Clerk will mail or email you a copy of the notice. 
   
-  Finally, the Supreme Court clerk will mail or email you a copy of the order.  
+  The Official Notice of Order will say if you must pay none of the court fees, some of the court fees, or all of the court fees.
 ---
 id: forms assembling
 continue button field: forms_assembling
