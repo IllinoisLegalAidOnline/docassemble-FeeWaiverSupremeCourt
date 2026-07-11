@@ -242,9 +242,9 @@ question: |
 subquestion: |
   After you download your *Application for Waiver of Supreme Court Fees* (${ form_name }), you must file it with the court. This program **does not file** your ${ form_name } for you.
   
-  **Note:** You can file your ${ form_name } at any time during your Supreme Court case. It is usually done when a person files their first forms in Supreme Court. That way they might have all of the court fees in a case waived.
+  **Note:** You can file your ${ form_name } at any time during your Supreme Court case. Most people file it when they submit their first forms in the Supreme Court. That way, if it is approved, all of the court fees in a case could be waived.
   
-  To learn more, read the "How to Request a Supreme Court Fee Waiver" instructions you can download at the end of this program. 
+  To learn more, download and read the "How to Request a Supreme Court Fee Waiver" instructions at the end of this program. 
 ---
 template: get_legal_help
 subject: |
@@ -370,7 +370,7 @@ fields:
     datatype: radio
     choices:
       - "I started the circuit court case.": plaintiff
-      - "I am responding to a circuit court case filed against me.": defendant
+      - "I responded to a circuit court case filed against me.": defendant
     show if:
       code: |
         filing_basis == "filing_self"
@@ -1491,6 +1491,8 @@ subquestion: |
   % if filing_basis == "filing_self":
   If you want to explain to a judge why you would be harmed if you do not
   get an ${ form_name }, you can explain it here. This is optional.
+
+  **Note:** if you receive Medicaid benefits and you want the judge to consider that information as part of your fee waiver request, you can enter that here.
   
   Complete this sentence:
   
@@ -1498,6 +1500,8 @@ subquestion: |
   % else:
   If you want to explain to the judge why ${ users[0].familiar() } would be 
   harmed if they do not get an ${ form_name }, you can explain it here. This is optional.
+
+  **Note:** if ${ users[0].familiar() } receives Medicaid benefits and you want the judge to consider that information as part of the fee waiver request, you can enter that here.
   
   Complete this sentence:
   
