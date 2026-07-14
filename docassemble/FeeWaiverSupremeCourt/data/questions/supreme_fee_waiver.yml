@@ -22,7 +22,7 @@ code: |
   github_user = 'IllinoisLegalAidOnline'
   form_name = "Supreme Court fee waiver"
   al_form_type = 'existing_case'
-  allowed_courts = ['Circuit']
+  allowed_courts = ['Supreme']
 ---
 objects:
   - users: ALPeopleList 
@@ -158,7 +158,7 @@ continue button field: case_county
 question: |
   In which county was the circuit court case filed?
 subquestion: |
-  This is the county is where the trial court issued the order that is being appealed.
+  This is the county where the trial court issued the order that is being appealed.
 fields:
   - County: trial_court_index
     code: |
@@ -187,7 +187,7 @@ question: |
 subquestion: |
   Welcome to Illinois Legal Aid Online's **Fee waiver - Supreme Court of Illinois** Easy Form.
   
-  This program makes a *Application for Waiver of Supreme Court Fees*, which asks the court to let you participate in an appeal to the Illinois Supreme Court for free or at a reduced cost.
+  This program makes an *Application for Waiver of Supreme Court Fees*, which asks the court to let you to waive or reduce the fees in your llinois Supreme Court case.
   
   To learn more, read ILAO's article about [**court fees and fee waivers**](https://www.illinoislegalaid.org/node/189246).
 field: sees_nav_bar
@@ -221,7 +221,7 @@ subquestion: |
   * Appellate court case, including the case number and district,
   * Supreme Court case for which you are requesting a fee waiver, including who filed the appeal.
 
-  You can find information about court cases on your court papers or documents you received from the court clerks.
+  You can find information about your cases on the court papers or documents you received from the court clerks.
   
   Set aside 10 to 15 minutes to finish this program. You can log in and save your work to continue later. 
  
@@ -242,7 +242,7 @@ question: |
 subquestion: |
   After you download your *Application for Waiver of Supreme Court Fees* (${ form_name }), you must file it with the court. This program **does not file** your ${ form_name } for you.
   
-  **Note:** You can file your ${ form_name } at any time during your Supreme Court case. Most people file it when they submit their first forms in the Supreme Court. That way, if it is approved, all of the court fees in a case could be waived.
+  **Note:** You can file your ${ form_name } at any time during your Supreme Court case. Most people file it when they submit their first forms in the Supreme Court. That way, if it is approved, all court fees in a case could be waived or reduced.
   
   To learn more, download and read the "How to Request a Supreme Court Fee Waiver" instructions at the end of this program. 
 ---
@@ -250,7 +250,7 @@ template: get_legal_help
 subject: |
   **What if I need legal advice?**
 content: |  
-  If you have questions or concerns about your legal problem and want legal advice you should talk to a lawyer.
+  If you have questions or concerns about your legal problem and want legal advice, you should talk to a lawyer.
   
   Use [**Get Legal Help**](https://www.illinoislegalaid.org/get-legal-help) to find free or low-cost legal services in your area.
 ---
@@ -429,7 +429,7 @@ question: |
   % endif
 subquestion: |
   % if filing_basis == "filing_self": 
-  Because you currently receive public benefits, you should qualify for 100% waiver of fees for your appeal.
+  Because you currently receive public benefits, you should qualify to have all fees waived for your appeal.
   % else:
   Because ${ users[0].familiar() } currently receives public benefits, they should qualify for a 100% waiver of fees in this appeal.
   % endif
@@ -562,7 +562,7 @@ question: |
 subquestion: |
   The form has space for **{certain types of income}** and up to two other sources of income. **Note:** If you have more than one more, you can list them together and add up the amount.
 
-  So far you have told us about:
+  So far, you have told us about:
   
   % if user_income_employment:
    * $${thousands(user_income_employment_amount, show_decimals=True)} from jobs or self-employment
@@ -775,7 +775,7 @@ question: |
 subquestion: |
   The form has space for **{certain types of income}** and up to two other sources of income. **Note:** If you have more than one more, you can list them together and add up the amount.
 
-  So far you have told us about:
+  So far, you have told us about:
   
   % if user_annual_employment:
    * $${thousands(user_annual_employment_amount, show_decimals=True)} from jobs or self-employment
@@ -1000,7 +1000,7 @@ question: |
 subquestion: |
   The form has space for **{certain types of expenses}** and up to two other monthly expenses. **Note:** If you have more than one more, you can list them together and add up the amount.
 
-  So far you have told us about:
+  So far, you have told us about:
   
   % if user_expense_rent:
    * $${thousands(user_expense_rent_amount, show_decimals=True)} for rent
@@ -1270,7 +1270,7 @@ question: |
 subquestion: |
   The form has space for **{certain types of assets}** and up to two other assets. **Note:** If you have more than one more, you can list them together and add up the amount.
 
-  So far you have told us about these assets:
+  So far, you have told us about these assets:
   
   % if user_asset_bank_account:
    * Bank accounts or cash worth $${thousands(user_asset_bank_account_amount, show_decimals=True)}
@@ -1400,12 +1400,12 @@ subquestion: |
 
   % if filing_basis == "filing_self":
   <div class="alert alert-info ilao-info" role="alert">
-    <h6 class="alert-heading">Explain other reasons why you need an ${ form_name }</h6>
+    <h6 class="alert-heading">Explain other reasons why you need a ${ form_name }</h6>
     <p>You can tell the judge about other reasons why it is hard for you to pay for court costs on another screen. This will be added to your ${ form_name } application.</p>
   </div>
   % else:
   <div class="alert alert-info ilao-info" role="alert">
-    <h6 class="alert-heading">Explain other reasons why ${ users[0].familiar() } needs an ${ form_name }</h6>
+    <h6 class="alert-heading">Explain other reasons why ${ users[0].familiar() } needs a ${ form_name }</h6>
     <p>You can tell the judge about other reasons why it is hard for ${ users[0].familiar() } to pay for court costs on another screen. This will be added to their ${ form_name } application.</p>
   </div>
   % endif 
@@ -1421,17 +1421,9 @@ template: other_fee_waiver_considerations
 subject: |
   **What else the judge will consider**
 content: |  
-  The judge will look at all of the information that you provide on the ${ form_name } application
-  to decide if ${ you_or_they } qualify. For example, the judge will compare ${ your_or_their }
-  assets and expenses. They will also read any additional explanation that you
-  decide to provide.
+  The judge will look at all of the information that you provide on the ${ form_name } application to decide if ${ you_or_they } qualify. For example, the judge will compare ${ your_or_their } assets and expenses. They will also read any additional explanation that you decide to provide.
   
-  Some of ${ your_or_their } assets will not be counted. For example: the value of ${ your_or_their } car,
-  up to $3,600, is not counted. A person can have up to $4,000 in other assets,
-  such as bank accounts, that are not counted. The assets that are not
-  counted are set by law: specifically, 
-  [**735 ILCS 5/12-901**](https://www.ilga.gov/legislation/ilcs/fulltext.asp?DocName=073500050K12-1001)
-  and [**735 ILCS 5/12-1001**](https://www.ilga.gov/legislation/ilcs/fulltext.asp?DocName=073500050K12-901).
+  Some of ${ your_or_their } assets will not be counted. For example, up to $3,600 of the value of ${ your_or_their } car is not counted. A person can have up to $4,000 in other assets, such as bank accounts, that are not counted. The assets that are not counted are set by law: specifically, [**735 ILCS 5/12-901**](https://www.ilga.gov/legislation/ilcs/fulltext.asp?DocName=073500050K12-901) and [**735 ILCS 5/12-1001**](https://www.ilga.gov/legislation/ilcs/fulltext.asp?DocName=073500050K12-1001)
   
   The judge may decide that ${ you_or_they } qualify for a partial reduction in court fees even if ${ you_or_they } do not qualify for a full waiver.  
 ---
@@ -1489,19 +1481,17 @@ question: |
   % endif
 subquestion: |
   % if filing_basis == "filing_self":
-  If you want to explain to a judge why you would be harmed if you do not
-  get an ${ form_name }, you can explain it here. This is optional.
+  If you want to tell the judge why you would be harmed if you do not get a ${ form_name }, you can explain it here. This is optional.
 
-  **Note:** if you receive Medicaid benefits and you want the judge to consider that information as part of your fee waiver request, you can enter that here.
+  **Note:** If you receive Medicaid benefits, have a disability, or have declared bankruptcy and you want the judge to consider that information as part of your fee waiver request, you can enter that here.
   
   Complete this sentence:
   
   **It would be a substantial hardship for me or my family if I have to pay the fees, costs, and charges because:**
   % else:
-  If you want to explain to the judge why ${ users[0].familiar() } would be 
-  harmed if they do not get an ${ form_name }, you can explain it here. This is optional.
+  If you want to tell the judge why ${ users[0].familiar() } would be harmed if they do not get an ${ form_name }, you can explain it here. This is optional.
 
-  **Note:** if ${ users[0].familiar() } receives Medicaid benefits and you want the judge to consider that information as part of the fee waiver request, you can enter that here.
+  **Note:** If ${ users[0].familiar() } receives Medicaid benefits, has a disability, or has declared bankruptcy and you want the judge to consider that information as part of the fee waiver request, you can enter that here.
   
   Complete this sentence:
   
@@ -1529,7 +1519,7 @@ question: |
   % endif
 subquestion: |
   % if len(users.elements) > 1:  
-  So far you have told us about ${fix_punctuation(users.full_names())}
+  So far, you have told us about ${fix_punctuation(users.full_names())}
   % endif  
 fields:
   - no label: users.there_is_another
@@ -1595,7 +1585,7 @@ question: |
   % endif
 subquestion: |
   % if len(other_parties.elements) >= 1:
-  So far you have told us about ${fix_punctuation(other_parties.full_names())}
+  So far, you have told us about ${fix_punctuation(other_parties.full_names())}
   % endif
 fields:
   - no label: other_parties.there_is_another
@@ -1891,7 +1881,7 @@ subquestion: |
   
   **Note:** If you are e-filing, you may need to upload proof of benefits or income. The Supreme Court clerk will let you know how to provide more information for your application.
 
-  Once the court decides, they will send you an Official Notice of Order on Application for Waiver of Supreme Court Fees. The Supreme Court Clerk will mail or email you a copy of the notice. 
+  Once the court decides, they will send you an Official Notice of Order on Application for Waiver of Supreme Court Fees. The Supreme Court clerk will mail or email you a copy of the notice. 
   
   The Official Notice of Order will say if you must pay none of the court fees, some of the court fees, or all of the court fees.
 ---
