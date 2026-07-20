@@ -305,7 +305,7 @@ subquestion: |
   Check any benefits that ${ users[0].familiar() } currently receives.
   % endif
 
-  **Note:** Medicaid works differently than these benefits. If ${you_or_they} are on Medicaid and want to include this in ${your_or_their} ${ form_name } application, you can explain it on another elsewhere. Look for the **Other reasons why paying court fees would be hard** screen.  
+  **Note:** Medicaid works differently than these benefits. If ${you_or_they} are on Medicaid and want to include this in ${your_or_their} ${ form_name } application, you can explain it elsewhere. Look for the **Other reasons why paying court fees would be hard** screen.  
 fields:
   - no label: user_benefits
     datatype: checkboxes
@@ -340,7 +340,7 @@ subquestion: |
   * SNAP - Supplemental Nutrition Assitance Program (Food Stamps)
   * General Assistance Program (GA), Transitional Assistance, or State Children and Family Assistance
 
-  **Note:** Medicaid works differently than these benefits. If ${you_or_they} are on Medicaid and want to include this in ${your_or_their} ${ form_name } application, you can explain it on another elsewhere. Look for the **Other reasons why paying court fees would be hard** screen.  
+  **Note:** Medicaid works differently than these benefits. If ${you_or_they} are on Medicaid and want to include this in ${your_or_their} ${ form_name } application, you can explain it elsewhere. Look for the **Other reasons why paying court fees would be hard** screen.  
 fields:
   - no label: user_applied_for_benefits
     datatype: yesnoradio
