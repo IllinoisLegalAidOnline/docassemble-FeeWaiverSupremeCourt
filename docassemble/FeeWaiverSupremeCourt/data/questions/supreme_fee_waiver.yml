@@ -242,7 +242,7 @@ question: |
 subquestion: |
   After you download your *Application for Waiver of Supreme Court Fees* (${ form_name }), you must file it with the court. This program **does not file** your ${ form_name } for you.
   
-  **Note:** You can file your ${ form_name } at any time during your Supreme Court case. Most people file it when they submit their first forms in the Supreme Court. That way, if it is approved, all court fees in a case could be waived or reduced.
+  **Note:** You can file your ${ form_name } at any time during your Supreme Court case. Most people file it when they submit their first forms in the Supreme Court. That way, if it is approved, all court fees in the Supreme Court case could be waived or reduced.
   
   To learn more, download and read the "How to Request a Supreme Court Fee Waiver" instructions at the end of this program. 
 ---
@@ -305,7 +305,7 @@ subquestion: |
   Check any benefits that ${ users[0].familiar() } currently receives.
   % endif
 
-  **Note:** Medicaid works differently than these benefits. If ${you_or_they} are on Medicaid and want to include this in ${your_or_their} ${ form_name } application, you can explain it on another screen.  
+  **Note:** Medicaid works differently than these benefits. If ${you_or_they} are on Medicaid and want to include this in ${your_or_their} ${ form_name } application, you can explain it on another elsewhere. Look for the **Other reasons why paying court fees would be hard** screen.  
 fields:
   - no label: user_benefits
     datatype: checkboxes
@@ -340,7 +340,7 @@ subquestion: |
   * SNAP - Supplemental Nutrition Assitance Program (Food Stamps)
   * General Assistance Program (GA), Transitional Assistance, or State Children and Family Assistance
 
-  **Note:** Medicaid works differently than these benefits. If ${you_or_they} are on Medicaid and want to include this in ${your_or_their} ${ form_name } application, you can explain it on another screen.  
+  **Note:** Medicaid works differently than these benefits. If ${you_or_they} are on Medicaid and want to include this in ${your_or_their} ${ form_name } application, you can explain it on another elsewhere. Look for the **Other reasons why paying court fees would be hard** screen.  
 fields:
   - no label: user_applied_for_benefits
     datatype: yesnoradio
@@ -562,7 +562,7 @@ question: |
 subquestion: |
   The form has space for **{certain types of income}** and up to two other sources of income. **Note:** If you have more than one more, you can list them together and add up the amount.
 
-  So far, you have told us about:
+  So far you have told us about:
   
   % if user_income_employment:
    * $${thousands(user_income_employment_amount, show_decimals=True)} from jobs or self-employment
@@ -775,7 +775,7 @@ question: |
 subquestion: |
   The form has space for **{certain types of income}** and up to two other sources of income. **Note:** If you have more than one more, you can list them together and add up the amount.
 
-  So far, you have told us about:
+  So far you have told us about:
   
   % if user_annual_employment:
    * $${thousands(user_annual_employment_amount, show_decimals=True)} from jobs or self-employment
@@ -1000,7 +1000,7 @@ question: |
 subquestion: |
   The form has space for **{certain types of expenses}** and up to two other monthly expenses. **Note:** If you have more than one more, you can list them together and add up the amount.
 
-  So far, you have told us about:
+  So far you have told us about:
   
   % if user_expense_rent:
    * $${thousands(user_expense_rent_amount, show_decimals=True)} for rent
@@ -1270,7 +1270,7 @@ question: |
 subquestion: |
   The form has space for **{certain types of assets}** and up to two other assets. **Note:** If you have more than one more, you can list them together and add up the amount.
 
-  So far, you have told us about these assets:
+  So far you have told us about these assets:
   
   % if user_asset_bank_account:
    * Bank accounts or cash worth $${thousands(user_asset_bank_account_amount, show_decimals=True)}
@@ -1472,26 +1472,23 @@ content: |
   * [**Outlook**](https://outlook.live.com/owa/?nlp=1&signup=1)
   * [**Yahoo**](https://login.yahoo.com/account/create?.lang=en-US&.intl=us)
 ---
+#Saving this note text for potential reuse: **Note:** If you receive Medicaid benefits, have a disability, or have declared bankruptcy and you want the judge to consider that information as part of your fee waiver request, you can enter that here.
 id: substantial hardship
 question: |
   % if filing_basis == "filing_self":
-  Will paying court fees be hard for you or your family?
+  Other reasons why paying court fees would be hard for you or your family
   % else:
-  Will paying court fees be hard for ${ users[0].familiar() } or their family?
+  Other reasons why paying court fees would be hard for ${ users[0].familiar() } or their family
   % endif
 subquestion: |
   % if filing_basis == "filing_self":
-  If you want to tell the judge why you would be harmed if you do not get a ${ form_name }, you can explain it here. This is optional.
-
-  **Note:** If you receive Medicaid benefits, have a disability, or have declared bankruptcy and you want the judge to consider that information as part of your fee waiver request, you can enter that here.
+  If there is additional information you think the judge should know about why you cannot afford to pay the court fees, include that information here. This is optional.
   
   Complete this sentence:
   
   **It would be a substantial hardship for me or my family if I have to pay the fees, costs, and charges because:**
   % else:
-  If you want to tell the judge why ${ users[0].familiar() } would be harmed if they do not get an ${ form_name }, you can explain it here. This is optional.
-
-  **Note:** If ${ users[0].familiar() } receives Medicaid benefits, has a disability, or has declared bankruptcy and you want the judge to consider that information as part of the fee waiver request, you can enter that here.
+  If there is additional information you think the judge should know about why ${ users[0].familiar() } cannot afford to pay the court fees, include that information here. This is optional.
   
   Complete this sentence:
   
@@ -1519,7 +1516,7 @@ question: |
   % endif
 subquestion: |
   % if len(users.elements) > 1:  
-  So far, you have told us about ${fix_punctuation(users.full_names())}
+  So far you have told us about ${fix_punctuation(users.full_names())}
   % endif  
 fields:
   - no label: users.there_is_another
@@ -1585,7 +1582,7 @@ question: |
   % endif
 subquestion: |
   % if len(other_parties.elements) >= 1:
-  So far, you have told us about ${fix_punctuation(other_parties.full_names())}
+  So far you have told us about ${fix_punctuation(other_parties.full_names())}
   % endif
 fields:
   - no label: other_parties.there_is_another
@@ -3245,7 +3242,7 @@ review:
       <h4>About you</h4>      
   - Edit: substantial_hardship_explanation
     button: |
-      **Substantial hardship because**:
+      **Cannot afford to pay court fees because**:
       ${ substantial_hardship_explanation.replace("\n", " ").replace("\r", " ") }
   - Edit: users[0].name.first
     button: |
@@ -3972,7 +3969,7 @@ review:
       % endif
   - Edit: substantial_hardship_explanation
     button: |
-      **Substantial hardship because**:
+      **Cannot afford to pay court fees because**:
       ${ substantial_hardship_explanation.replace("\n", " ").replace("\r", " ") }
   - Edit: user_has_dependents
     button: |
