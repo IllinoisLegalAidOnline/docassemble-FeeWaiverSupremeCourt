@@ -87,6 +87,7 @@ code: |
   user_annual_total
   user_expense_total
   user_asset_total
+  substantial_hardship_explanation
   
   set_progress(50)
   nav.set_section('section_case_info')
@@ -111,7 +112,6 @@ code: |
   
   set_progress(85)
   nav.set_section('section_about_you')
-  substantial_hardship_explanation
   users[0].address.address
   users[0].has_email_address
 
@@ -1741,7 +1741,7 @@ id: juvenile act involvement
 question: |
   Does the case involve a minor in juvenile delinquency proceedings?
 subquestion: |
-  If the case involves a delinquent minor proceeding under the Juvenlie Court Act, select **Yes**.
+  If the case involves a delinquent minor proceeding under the Juvenile Court Act, select **Yes**.
 fields:
   - "Case involves a juvenile delinquency proceeding?": juvenile_act_involvement
     datatype: yesnoradio
@@ -1880,7 +1880,7 @@ subquestion: |
 
   Once the court decides, they will send you an Official Notice of Order on Application for Waiver of Supreme Court Fees. The Supreme Court clerk will mail or email you a copy of the notice. 
   
-  The Official Notice of Order will say if you must pay none of the court fees, some of the court fees, or all of the court fees.
+  The Official Notice of Order will say if you must pay all of the court fees, some of the court fees, or none of the court fees.
 ---
 id: forms assembling
 continue button field: forms_assembling
@@ -3166,7 +3166,10 @@ review:
       * ${my_var.name.text} worth $${thousands(my_var.amount, show_decimals=True)} 
       % endfor
     show if: user_asset_other and not user_asset_none
-      
+  - Edit: substantial_hardship_explanation
+    button: |
+      **Cannot afford to pay court fees because**:
+      ${ substantial_hardship_explanation.replace("\n", " ").replace("\r", " ") }
   - note: |
       <h4>Court case info</h4>      
   - Edit: plaintiffs.revisit
@@ -3240,10 +3243,6 @@ review:
       % endif
   - note: |
       <h4>About you</h4>      
-  - Edit: substantial_hardship_explanation
-    button: |
-      **Cannot afford to pay court fees because**:
-      ${ substantial_hardship_explanation.replace("\n", " ").replace("\r", " ") }
   - Edit: users[0].name.first
     button: |
       **Your name:**
@@ -3867,6 +3866,10 @@ review:
       * ${my_var.name.text} worth $${thousands(my_var.amount, show_decimals=True)} 
       % endfor
     show if: user_asset_other and not user_asset_none
+  - Edit: substantial_hardship_explanation
+    button: |
+      **Cannot afford to pay court fees because**:
+      ${ substantial_hardship_explanation.replace("\n", " ").replace("\r", " ") }
 ---
 id: court case info review screen
 section: Court case info
@@ -3967,10 +3970,6 @@ review:
       % else:
       No
       % endif
-  - Edit: substantial_hardship_explanation
-    button: |
-      **Cannot afford to pay court fees because**:
-      ${ substantial_hardship_explanation.replace("\n", " ").replace("\r", " ") }
   - Edit: user_has_dependents
     button: |
       **Supporting any dependents in same household?**
