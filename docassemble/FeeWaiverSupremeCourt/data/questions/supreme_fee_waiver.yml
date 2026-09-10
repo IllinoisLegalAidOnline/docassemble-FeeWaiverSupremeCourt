@@ -87,7 +87,6 @@ code: |
   user_annual_total
   user_expense_total
   user_asset_total
-  substantial_hardship_explanation
   
   set_progress(50)
   nav.set_section('section_case_info')
@@ -112,6 +111,7 @@ code: |
   
   set_progress(85)
   nav.set_section('section_about_you')
+  substantial_hardship_explanation
   users[0].address.address
   users[0].has_email_address
 
@@ -3166,10 +3166,6 @@ review:
       * ${my_var.name.text} worth $${thousands(my_var.amount, show_decimals=True)} 
       % endfor
     show if: user_asset_other and not user_asset_none
-  - Edit: substantial_hardship_explanation
-    button: |
-      **Cannot afford to pay court fees because**:
-      ${ substantial_hardship_explanation.replace("\n", " ").replace("\r", " ") }
   - note: |
       <h4>Court case info</h4>      
   - Edit: plaintiffs.revisit
@@ -3242,11 +3238,15 @@ review:
       ${supreme_case_number}
       % endif
   - note: |
-      <h4>About you</h4>      
+      <h4>About you</h4>     
   - Edit: users[0].name.first
     button: |
       **Your name:**
       ${ users[0].name_full() }
+  - Edit: substantial_hardship_explanation
+    button: |
+      **Cannot afford to pay court fees because**:
+      ${ substantial_hardship_explanation.replace("\n", " ").replace("\r", " ") }
   - Edit: users[0].address.address
     button: |
       % if filing_basis != "filing_self":
@@ -3866,10 +3866,6 @@ review:
       * ${my_var.name.text} worth $${thousands(my_var.amount, show_decimals=True)} 
       % endfor
     show if: user_asset_other and not user_asset_none
-  - Edit: substantial_hardship_explanation
-    button: |
-      **Cannot afford to pay court fees because**:
-      ${ substantial_hardship_explanation.replace("\n", " ").replace("\r", " ") }
 ---
 id: court case info review screen
 section: Court case info
@@ -3984,6 +3980,10 @@ review:
       **Number of minor dependents**:
       ${ user_dependents_children }
     show if: user_has_dependents
+  - Edit: substantial_hardship_explanation
+    button: |
+      **Cannot afford to pay court fees because**:
+      ${ substantial_hardship_explanation.replace("\n", " ").replace("\r", " ") }
   - Edit: users[0].address.address
     button: |
       % if filing_basis != "filing_self":
