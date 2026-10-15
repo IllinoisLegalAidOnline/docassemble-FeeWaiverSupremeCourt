@@ -32,7 +32,6 @@ objects:
   - user_annual_other_list: DAList.using(object_type=Thing, complete_attribute='complete', there_are_any=True)
   - user_expense_other_list: DAList.using(object_type=Thing, complete_attribute='complete', there_are_any=True)
   - user_asset_other_list: DAList.using(object_type=Thing, complete_attribute='complete', there_are_any=True)
-  - court_list: ALCourtLoader.using(file_name='docassemble.ILAO:data/sources/il_courts.xlsx')
   - user_benefits: DADict
 ---
 sections:
@@ -98,7 +97,7 @@ code: |
   docket_number
   plaintiffs
   defendants
-  trial_court.address.address
+  case_county
   judge.name.last
   minor_involvement
   juvenile_act_involvement
@@ -154,32 +153,14 @@ code: |
   snapshot_forms = True
 ---
 id: trial court county
-continue button field: case_county
 question: |
   In which county was the circuit court case filed?
 subquestion: |
   This is the county where the trial court issued the order that is being appealed.
 fields:
-  - County: trial_court_index
+  - County: case_county
     code: |
-      court_county_lookup()
----
-code: |
-  def court_county_lookup():
-    all_court_counties = court_list._load_courts()['address_county'].items()
-    filtered_courts = [(-1, "Cook")]
-    for court in all_court_counties:
-      if court[1] != "Cook":
-        filtered_courts.append(court)
-    return sorted( filtered_courts, key=lambda y: y[1])
----
-depends on:
-  - trial_court_index
-code: |
-  if trial_court_index == "-1":
-    trial_court = court_list.as_court('trial_court', 15)
-  else:
-    trial_court = court_list.as_court('trial_court', trial_court_index)
+      il_county_list
 ---
 id: welcome
 question: |
@@ -189,7 +170,7 @@ subquestion: |
   
   This program makes an *Application for Waiver of Supreme Court Fees*, which asks the court to let you to waive or reduce the fees in your llinois Supreme Court case.
   
-  To learn more, read ILAO's article about [**court fees and fee waivers**](https://www.illinoislegalaid.org/node/189246).
+  To learn more, see ILAO's article about [**court fees and fee waivers**](https://www.illinoislegalaid.org/node/189246).
 field: sees_nav_bar
 ---
 id: your name
@@ -1973,7 +1954,7 @@ attachments:
       - "supreme_case_number_5": ${supreme_case_number}
       - "appellate_case_number": ${ appellate_case_number }
       - "appellate_district": ${ appellate_district }
-      - "trial_court_county": ${ trial_court.address.county }
+      - "trial_court_county": ${ case_county }
       - "docket_number": ${ docket_number }
       - "trial_court_judge_name": ${ judge.name_full() }
       - "in_re": ${ in_re_label if in_re_check else "" }
@@ -3198,13 +3179,10 @@ review:
     button: |
       **Circuit court case number**:
       ${ docket_number }
-  - Edit: 
-      - trial_court_index
-      - recompute:
-        - trial_court
+  - Edit: case_county
     button: |
       **County where the circuit court case was filed:**
-      ${ trial_court.address.county }
+      ${ case_county }
   - Edit: judge.name.last
     button: |
       **Circuit court judge:** ${ judge.name_full()}
@@ -3905,13 +3883,10 @@ review:
     button: |
       **Circuit court case number**:
       ${ docket_number }
-  - Edit: 
-      - trial_court_index
-      - recompute:
-        - trial_court
+  - Edit: case_county
     button: |
       **County where the circuit court case was filed:**
-      ${ trial_court.address.county }
+      ${ case_county }
   - Edit: judge.name.last
     button: |
       **Circuit court judge:** ${ judge.name_full()}
