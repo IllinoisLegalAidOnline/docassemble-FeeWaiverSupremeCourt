@@ -62,7 +62,8 @@ code: |
     if user_receives_benefits:
       user_qualifies_interstitial
   if user_is_incarcerated or not user_receives_benefits:
-    user_applied_for_benefits
+    if not user_is_incarcerated:
+      user_applied_for_benefits
     set_progress(25)
     if not user_income_none:
       if user_income_other:
@@ -102,8 +103,8 @@ code: |
   minor_involvement
   juvenile_act_involvement
 
-  appellate_district
-  appellate_case_number
+  if not no_appellate:
+    appellate_case_number
 
   user_is_appellant
   supreme_case_number
@@ -115,7 +116,8 @@ code: |
   users[0].has_email_address
 
   set_progress(90)
-  e_signature
+  if efiling_check:
+    e_signature
   bring_docs
 
   set_progress(100)
@@ -168,7 +170,7 @@ question: |
 subquestion: |
   Welcome to Illinois Legal Aid Online's **Fee waiver - Supreme Court of Illinois** Easy Form.
   
-  This program makes an *Application for Waiver of Supreme Court Fees*, which asks the court to let you to waive or reduce the fees in your llinois Supreme Court case.
+  This program makes an *Application for Waiver of Supreme Court Fees*, which asks the court to let you to waive the fees in your llinois Supreme Court case.
   
   To learn more, see ILAO's article about [**court fees and fee waivers**](https://www.illinoislegalaid.org/node/189246).
 field: sees_nav_bar
@@ -196,7 +198,7 @@ subquestion: |
   * Your monthly expenses, and
   * The value of your belongings.
 
-  You will also need to know information about the:
+  You may need to know information about the:
   
   * Circuit court case, including the case number, county, and judge, 
   * Appellate court case, including the case number and district,
@@ -222,8 +224,8 @@ question: |
   After you finish this program
 subquestion: |
   After you download your *Application for Waiver of Supreme Court Fees* (${ form_name }), you must file it with the court. This program **does not file** your ${ form_name } for you.
-  
-  **Note:** You can file your ${ form_name } at any time during your Supreme Court case. Most people file it when they submit their first forms in the Supreme Court. That way, if it is approved, all court fees in the Supreme Court case could be waived or reduced.
+
+  **Note:** You must file your ${ form_name } when you file your first form with the Supreme Court.
   
   To learn more, download and read the "How to Request a Supreme Court Fee Waiver" instructions at the end of this program. 
 ---
@@ -1361,7 +1363,7 @@ code: |
     last_year_income_qualifies_partial = poverty_scale_income_qualifies(user_annual_total/12, multiplier=2.0)
 
 ---
-id: show_qualification_guess
+id: show qualification guess
 continue button field: show_qualification_guess
 question: |
   How to qualify for a waiver
@@ -1373,8 +1375,8 @@ subquestion: |
   ${ currency(get_annual_total()) } (${ currency(get_annual_total()/12) }
   per month). The judge will look at income from last month and the average monthly income over the last 12 months.
   
-  For a **full ${ form_name }**, with ${ your_or_their} household size, ${ your_or_their } monthly income needs to be at or below 
-  ${ currency(poverty_scale_get_income_limit(household_size=household_size, multiplier=1.25)/12) }. For a **partial ${ form_name }**, it needs to be between ${ currency(poverty_scale_get_income_limit(household_size=household_size, multiplier=1.25)/12) } and ${ currency(poverty_scale_get_income_limit(household_size=household_size, multiplier=2.0)/12) } per month.
+  For a **${ form_name }**, with ${ your_or_their} household size, ${ your_or_their } monthly income needs to be at or below 
+  ${ currency(poverty_scale_get_income_limit(household_size=household_size, multiplier=1.25)/12) }.
   
   The judge will also consider ${ your_or_their } total assets of ${ currency(get_asset_total()) }
   and ${ your_or_their } total monthly expenses of ${ currency(user_expense_total) }.
@@ -1405,8 +1407,6 @@ content: |
   The judge will look at all of the information that you provide on the ${ form_name } application to decide if ${ you_or_they } qualify. For example, the judge will compare ${ your_or_their } assets and expenses. They will also read any additional explanation that you decide to provide.
   
   Some of ${ your_or_their } assets will not be counted. For example, up to $3,600 of the value of ${ your_or_their } car is not counted. A person can have up to $4,000 in other assets, such as bank accounts, that are not counted. The assets that are not counted are set by law: specifically, [**735 ILCS 5/12-901**](https://www.ilga.gov/legislation/ilcs/fulltext.asp?DocName=073500050K12-901) and [**735 ILCS 5/12-1001**](https://www.ilga.gov/legislation/ilcs/fulltext.asp?DocName=073500050K12-1001)
-  
-  The judge may decide that ${ you_or_they } qualify for a partial reduction in court fees even if ${ you_or_they } do not qualify for a full waiver.  
 ---
 id: your contact information
 generic object: ALIndividual
@@ -1711,12 +1711,16 @@ subquestion: |
 fields:
   - Appellate district: appellate_district
     input type: radio
+    js disable if: |
+      val('no_appellate') === true
     choices:
       - First: First
       - Second: Second
       - Third: Third
       - Fourth: Fourth
       - Fifth: Fifth
+  - This case did not go to an appellate court. It is being appealed to the Supreme Court from the circuit court.: no_appellate
+    datatype: yesnowide
 ---
 id: juvenile act involvement
 question: |
@@ -1764,7 +1768,11 @@ id: who is filing supreme appeal
 question: |
   Who is filing the appeal to the Supreme Court?
 subquestion: |
+  % if no_appellate:
+  The person or company who the circuit court ruled against is usually the one who files the appeal to the Supreme Court. These are the participants in your case:
+  % else:
   The person or company who the appellate court ruled against is usually the one who files the appeal to the Supreme Court. These are the participants in your case:
+  % endif
 
   Your side:
 
@@ -1782,15 +1790,26 @@ subquestion: |
   % endfor
   % endif
   
-  If you or someone on your side of the case is asking the Supreme Court to review an order of the appellate court, select **Me or someone on my side**.
+  If you or someone on your side of the case is asking the Supreme Court to review a court order, select **Me or someone on my side**.
 
-  If you or someone on the other side of the case is asking the Supreme Court to review an order of the appellate court, select **Someone on the other side**.
+  If you or someone on the other side of the case is asking the Supreme Court to review a court order, select **Someone on the other side**.
 fields:
   - Who is filing the appeal?: user_is_appellant
     datatype: radio
     choices:
       - Me or someone on my side: True
       - Someone on the other side: False
+---
+id: efiling check
+question: |
+  Will you e-file your forms?
+subquestion: |
+  You will have to file your forms with the Supreme Court. Court forms are filed using electronic filing, also called "e-filing." To learn more about e-filing, read ILAO's [**E-filing FAQ**](https://www.illinoislegalaid.org/node/184011).
+  
+  You must file your forms by e-filing unless you are exempt. If you want to ask for an e-filing exemption, you can use ILAO's [**E-filing exemption - Supreme Court Easy Form**](https://www.illinoislegalaid.org/node/113241). If the Supreme Court already gave you an e-filing exemption, you can click **Yes**.
+fields:
+  - no label: efiling_check
+    datatype: yesnoradio
 ---
 id: e-signature
 question: |
@@ -1859,9 +1878,7 @@ subquestion: |
   
   **Note:** If you are e-filing, you may need to upload proof of benefits or income. The Supreme Court clerk will let you know how to provide more information for your application.
 
-  Once the court decides, they will send you an Official Notice of Order on Application for Waiver of Supreme Court Fees. The Supreme Court clerk will mail or email you a copy of the notice. 
-  
-  The Official Notice of Order will say if you must pay all of the court fees, some of the court fees, or none of the court fees.
+  Once the court decides, they will send you an Official Notice of Order on Application for Waiver of Supreme Court Fees. The Supreme Court clerk's office will notify you by email or mail to let you know if your application was allowed or denied.
 ---
 id: forms assembling
 continue button field: forms_assembling
@@ -1952,8 +1969,8 @@ attachments:
       - "supreme_case_number_3": ${supreme_case_number}
       - "supreme_case_number_4": ${supreme_case_number}
       - "supreme_case_number_5": ${supreme_case_number}
-      - "appellate_case_number": ${ appellate_case_number }
-      - "appellate_district": ${ appellate_district }
+      - "appellate_case_number": ${ "" if no_appellate else appellate_case_number }
+      - "appellate_district": ${ "" if no_appellate else appellate_district }
       - "trial_court_county": ${ case_county }
       - "docket_number": ${ docket_number }
       - "trial_court_judge_name": ${ judge.name_full() }
@@ -1973,7 +1990,7 @@ attachments:
       - "incarcerated_yes": ${ user_is_incarcerated }
       - "inmate_id": ${ inmate_id if user_is_incarcerated else "" }
       - "trust_account_balance": ${ thousands(trust_account_balance, show_decimals=True) if user_is_incarcerated else "" }
-      - "signer_signature_no_slash": ${ users[0].name_full() if e_signature else '' }
+      - "signer_signature_no_slash": ${ users[0].name_full() if efiling_check and e_signature else '' }
       - "signer_email": ${ users[0].email if users[0].has_email_address else "" }
       - "user_address_one_line__2": ${ users[0].address.on_one_line(bare=True) }
       - "signer_phone_number": ${ phone_number_formatted(users[0].phone_number) }
@@ -2023,13 +2040,13 @@ attachments:
           % endif
       - "user_pending_benefits_yes": |
           % if user_is_incarcerated:
-          ${user_applied_for_benefits}
+          ${False}
           % else:
           ${user_applied_for_benefits and user_benefits.all_false()}
           % endif
       - "user_pending_benefits_no": |
           % if user_is_incarcerated:
-          ${not user_applied_for_benefits}
+          ${ True}
           % else:
           ${not user_applied_for_benefits and user_benefits.all_false()}
           % endif
@@ -3195,14 +3212,20 @@ review:
     button: |
       **Case involves a juvenile delinquency proceeding?**
       ${word(yesno(juvenile_act_involvement))}
-  - Edit: appellate_district
+  - Edit: no_appellate
     button: |
+      % if no_appellate:
+      **Did this case go to the appellate court?**
+      No
+      % else:
       **Appellate district where the appellate case was filed:**
       ${appellate_district}
+      % endif
   - Edit: appellate_case_number
     button: |
       **Appellate court case number**:
       ${ appellate_case_number }
+    show if: not no_appellate
   - Edit: user_is_appellant
     button: |
       **Are you or someone on your side of the case filing the appeal?**
@@ -3247,11 +3270,15 @@ review:
       **Your email**:
       ${ users[0].email }      
     show if: users[0].has_email_address == True
-      
+  - Edit: efiling_check
+    button: |
+      **Will you e-file your forms?**
+      ${word(yesno(efiling_check))}
   - Edit: e_signature
     button: |
       **Do you want to add your e-signature to your ${ form_name }?**
       ${ word(yesno(e_signature)) }
+    show if: efiling_check
 ---
 id: edit plaintiffs review screen
 continue button field: plaintiffs.revisit
@@ -3899,14 +3926,20 @@ review:
     button: |
       **Case involves a juvenile delinquency proceeding?**
       ${word(yesno(juvenile_act_involvement))}
-  - Edit: appellate_district
+  - Edit: no_appellate
     button: |
+      % if no_appellate:
+      **Did this case go to the appellate court?**
+      No
+      % else:
       **Appellate district where the appellate case was filed:**
       ${appellate_district}
+      % endif
   - Edit: appellate_case_number
     button: |
       **Appellate court case number**:
       ${ appellate_case_number }
+    show if: not no_appellate
   - Edit: user_is_appellant
     button: |
       **Are you or someone on your side of the case filing the appeal?**
@@ -3980,7 +4013,12 @@ review:
       **Your email**:
       ${ users[0].email }      
     show if: users[0].has_email_address == True
+  - Edit: efiling_check
+    button: |
+      **Will you e-file your forms?**
+      ${word(yesno(efiling_check))}
   - Edit: e_signature
     button: |
       **Do you want to add your e-signature to your ${ form_name }?**
       ${ word(yesno(e_signature)) }
+    show if: efiling_check
