@@ -1711,8 +1711,6 @@ subquestion: |
 fields:
   - Appellate district: appellate_district
     input type: radio
-    js disable if: |
-      val('no_appellate') === true
     choices:
       - First: First
       - Second: Second
@@ -1721,6 +1719,7 @@ fields:
       - Fifth: Fifth
   - This case did not go to an appellate court. It is being appealed to the Supreme Court from the circuit court.: no_appellate
     datatype: yesnowide
+    disable others: True
 ---
 id: juvenile act involvement
 question: |
@@ -1806,7 +1805,7 @@ question: |
 subquestion: |
   You will have to file your forms with the Supreme Court. Court forms are filed using electronic filing, also called "e-filing." To learn more about e-filing, read ILAO's [**E-filing FAQ**](https://www.illinoislegalaid.org/node/184011).
   
-  You must file your forms by e-filing unless you are exempt. If you want to ask for an e-filing exemption, you can use ILAO's [**E-filing exemption - Supreme Court Easy Form**](https://www.illinoislegalaid.org/node/113241). If the Supreme Court already gave you an e-filing exemption, you can click **Yes**.
+  You must file your forms by e-filing unless you are exempt. If you want to ask for an e-filing exemption, you can use ILAO's [**E-filing exemption - Supreme Court Easy Form**](https://www.illinoislegalaid.org/node/113241). If the Supreme Court already gave you an e-filing exemption, you can click **No**.
 fields:
   - no label: efiling_check
     datatype: yesnoradio
