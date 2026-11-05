@@ -62,8 +62,7 @@ code: |
     if user_receives_benefits:
       user_qualifies_interstitial
   if user_is_incarcerated or not user_receives_benefits:
-    if not user_is_incarcerated:
-      user_applied_for_benefits
+    user_applied_for_benefits
     set_progress(25)
     if not user_income_none:
       if user_income_other:
@@ -2039,13 +2038,13 @@ attachments:
           % endif
       - "user_pending_benefits_yes": |
           % if user_is_incarcerated:
-          ${False}
+          ${user_applied_for_benefits}
           % else:
           ${user_applied_for_benefits and user_benefits.all_false()}
           % endif
       - "user_pending_benefits_no": |
           % if user_is_incarcerated:
-          ${ True}
+          ${not user_applied_for_benefits}
           % else:
           ${not user_applied_for_benefits and user_benefits.all_false()}
           % endif
@@ -2790,6 +2789,7 @@ review:
     button: |
       **Applied for public benefits?**
       ${ word(yesno(user_applied_for_benefits)) }
+    show if: user_is_incarcerated or user_benefits.all_false()
   - Edit: user_income_none
     button: |
       **Any income (last month)?**
@@ -3483,6 +3483,7 @@ review:
     button: |
       **Applied for public benefits?**
       ${ word(yesno(user_applied_for_benefits)) }
+    show if: user_is_incarcerated or user_benefits.all_false()
   - Edit: user_income_none
     button: |
       **Any income (last month)?**
